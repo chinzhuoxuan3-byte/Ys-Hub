@@ -1,3 +1,5 @@
+--开源，此脚本可能非常垃圾，因为这是随手写的。一起加入打压团团垃圾游戏👍
+--€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
@@ -24,7 +26,7 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
-
+--Anti-ban逻辑🐖
 local antiBanActive = false
 local RemoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
 local Banned = RemoteEvents and RemoteEvents:FindFirstChild("Banned")
