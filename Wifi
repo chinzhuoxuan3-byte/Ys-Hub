@@ -1,5 +1,4 @@
---开源，此脚本可能非常垃圾，因为这是随手写的。一起加入打压团团垃圾游戏👍
---€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+--开源项目
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
@@ -26,12 +25,21 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
---Anti-ban逻辑🐖
+
 local antiBanActive = false
 local RemoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
 local Banned = RemoteEvents and RemoteEvents:FindFirstChild("Banned")
 local ClientEffect = RemoteEvents and RemoteEvents:FindFirstChild("ClientEffect")
 local ZoneChecking = RemoteEvents and RemoteEvents:FindFirstChild("ZoneChecking")
+
+if not Banned then
+    for _, obj in getnilinstances() do
+        if obj:IsA("RemoteEvent") and obj.Name == "Banned" then
+            Banned = obj
+            break
+        end
+    end
+end
 
 local function hookBannedWho()
     for _, v in getgc(true) do
@@ -53,7 +61,7 @@ local function hookBannedWho()
     return false
 end
 
-local function hookBanRemote()
+local function hookBannedRemote()
     if Banned then
         pcall(function()
             local oldFire = Banned.FireServer
@@ -63,7 +71,10 @@ local function hookBanRemote()
                     return nil
                 end
                 if type(args[2]) == "string" and args[2] then
-                    return nil
+                    local reason = args[2]
+                    if string.find(reason, "封禁") or string.find(reason, "ban") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速") or string.find(reason, "飞行") then
+                        return nil
+                    end
                 end
                 return oldFire(self, unpack(args))
             end
@@ -88,7 +99,7 @@ local function hookClientEffect()
                 end
                 if type(args[2]) == "string" then
                     local reason = args[2]
-                    if string.find(reason, "封禁") or string.find(reason, "ban") or string.find(reason, "作弊") then
+                    if string.find(reason, "封禁") or string.find(reason, "ban") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速") or string.find(reason, "飞行") then
                         return nil
                     end
                 end
@@ -110,11 +121,10 @@ local function hookZoneChecking()
             local oldFire = ZoneChecking.FireServer
             ZoneChecking.FireServer = function(self, ...)
                 local args = {...}
-                if type(args[1]) == "table" and args[1] and args[1].Type == "AFK" then
-                    return nil
-                end
-                if type(args[1]) == "table" and args[1] and args[1].Type == "In" then
-                    return nil
+                if type(args[1]) == "table" and args[1] then
+                    if args[1].Type == "AFK" or args[1].Type == "In" then
+                        return nil
+                    end
                 end
                 return oldFire(self, unpack(args))
             end
@@ -167,7 +177,7 @@ local function hookKick()
     pcall(function()
         local oldKick = LocalPlayer.Kick
         LocalPlayer.Kick = function(self, reason)
-            if reason and (string.find(reason, "ban") or string.find(reason, "封禁") or string.find(reason, "作弊")) then
+            if reason and (string.find(reason, "ban") or string.find(reason, "封禁") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速")) then
                 return nil
             end
             return oldKick(self, reason)
@@ -190,7 +200,7 @@ local function hookNamecall()
         if method == "FireServer" or method == "InvokeServer" then
             if self and self.Name then
                 local nameLower = string.lower(self.Name)
-                if string.find(nameLower, "ban") or string.find(nameLower, "kick") then
+                if string.find(nameLower, "ban") or string.find(nameLower, "kick") or string.find(nameLower, "banned") then
                     return nil
                 end
             end
@@ -200,17 +210,33 @@ local function hookNamecall()
     setreadonly(mt, true)
 end
 
-local function hookHumanoidSpeed()
+local function hookProximityPrompt()
+    for _, prompt in pairs(Workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            pcall(function()
+                local oldChanged = prompt.Changed
+                prompt.Changed = function(self, property)
+                    if property == "HoldDuration" then
+                        return nil
+                    end
+                    return oldChanged(self, property)
+                end
+            end)
+        end
+    end
+end
+
+local function hookStateChanged()
     for _, v in getgc(true) do
         if type(v) == "function" then
             local info = debug.getinfo(v)
-            if info and info.name == "Changed" then
+            if info and info.name == "StateChanged" then
                 pcall(function()
-                    hookfunction(v, function(self, property)
-                        if property == "WalkSpeed" or property == "JumpPower" then
+                    hookfunction(v, function(self, oldState, newState)
+                        if newState == Enum.HumanoidStateType.Freefall or newState == Enum.HumanoidStateType.FallingDown then
                             return nil
                         end
-                        return v(self, property)
+                        return v(self, oldState, newState)
                     end)
                 end)
             end
@@ -218,19 +244,66 @@ local function hookHumanoidSpeed()
     end
 end
 
-local function hookProximityPrompt()
-    for _, v in getgc(true) do
-        if type(v) == "function" then
-            local info = debug.getinfo(v)
-            if info and info.name == "doingFW" then
-                pcall(function()
-                    hookfunction(v, function()
+local function hookHumanoidChanged()
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        pcall(function()
+            local oldChanged = humanoid.Changed
+            hookfunction(humanoid.Changed, function(self, property)
+                if property == "WalkSpeed" or property == "JumpPower" then
+                    return nil
+                end
+                return oldChanged(self, property)
+            end)
+        end)
+    end
+end
+
+local function hookTorsoChanged()
+    local char = LocalPlayer.Character
+    if char then
+        local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+        if torso then
+            pcall(function()
+                local oldChanged = torso.Changed
+                hookfunction(torso.Changed, function(self, property)
+                    if property == "CanCollide" then
                         return nil
-                    end)
+                    end
+                    return oldChanged(self, property)
                 end)
-            end
+            end)
         end
     end
+end
+
+local function hookOverlapParams()
+    for _, v in getgc(true) do
+        if type(v) == "table" and rawget(v, "FilterType") and rawget(v, "IncludeInstances") then
+            pcall(function()
+                v.IncludeInstances = {}
+                v.FilterDescendantsInstances = {}
+            end)
+        end
+    end
+end
+
+local function hookRaycast()
+    pcall(function()
+        local oldRaycast = Workspace.Raycast
+        Workspace.Raycast = function(origin, direction, params)
+            if params and params.FilterDescendantsInstances then
+                local newFilter = {}
+                for _, inst in ipairs(params.FilterDescendantsInstances) do
+                    if inst ~= LocalPlayer.Character then
+                        table.insert(newFilter, inst)
+                    end
+                end
+                params.FilterDescendantsInstances = newFilter
+            end
+            return oldRaycast(origin, direction, params)
+        end
+    end)
 end
 
 local function clearBanFlags()
@@ -239,36 +312,100 @@ local function clearBanFlags()
             local char = LocalPlayer.Character
             if char then
                 for _, obj in ipairs(char:GetDescendants()) do
-                    if obj:IsA("BoolValue") or obj:IsA("NumberValue") or obj:IsA("StringValue") then
+                    if obj:IsA("BoolValue") or obj:IsA("NumberValue") or obj:IsA("StringValue") or obj:IsA("IntValue") then
                         local nameLower = string.lower(obj.Name)
-                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") then
+                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "detect") then
                             pcall(function()
                                 if obj:IsA("BoolValue") then obj.Value = false end
-                                if obj:IsA("NumberValue") then obj.Value = 0 end
+                                if obj:IsA("NumberValue") or obj:IsA("IntValue") then obj.Value = 0 end
+                                if obj:IsA("StringValue") then obj.Value = "" end
+                            end)
+                        end
+                    end
+                end
+                local playerInfo = char:FindFirstChild("PlayerInfo")
+                if playerInfo then
+                    for _, obj in ipairs(playerInfo:GetChildren()) do
+                        local nameLower = string.lower(obj.Name)
+                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") then
+                            pcall(function()
+                                if obj:IsA("BoolValue") then obj.Value = false end
+                                if obj:IsA("NumberValue") or obj:IsA("IntValue") then obj.Value = 0 end
                                 if obj:IsA("StringValue") then obj.Value = "" end
                             end)
                         end
                     end
                 end
             end
-            task.wait(0.5)
+            task.wait(0.1)
         end
     end)
+end
+
+local function hookAllRemotes()
+    local events = {}
+    for _, obj in getnilinstances() do
+        if obj:IsA("RemoteEvent") then
+            table.insert(events, obj)
+        end
+    end
+    local function searchFolder(folder)
+        if not folder then return end
+        for _, child in ipairs(folder:GetChildren()) do
+            if child:IsA("RemoteEvent") then
+                table.insert(events, child)
+            end
+            if child:IsA("Folder") or child:IsA("Model") then
+                searchFolder(child)
+            end
+        end
+    end
+    searchFolder(ReplicatedStorage)
+    searchFolder(Workspace)
+    for _, event in ipairs(events) do
+        pcall(function()
+            local oldFire = event.FireServer
+            event.FireServer = function(self, ...)
+                local args = {...}
+                for i, v in ipairs(args) do
+                    if type(v) == "string" then
+                        if string.find(string.lower(v), "ban") or string.find(string.lower(v), "kick") or string.find(string.lower(v), "封禁") or string.find(string.lower(v), "作弊") then
+                            args[i] = ""
+                        end
+                    end
+                    if type(v) == "number" and v < 0 then
+                        args[i] = 0
+                    end
+                    if type(v) == "boolean" and v == true then
+                        if string.find(string.lower(event.Name), "ban") or string.find(string.lower(event.Name), "kick") or string.find(string.lower(event.Name), "banned") then
+                            args[i] = false
+                        end
+                    end
+                end
+                return oldFire(self, unpack(args))
+            end
+        end)
+    end
 end
 
 local function enableAntiBan()
     if antiBanActive then return end
     antiBanActive = true
     hookBannedWho()
-    hookBanRemote()
+    hookBannedRemote()
     hookClientEffect()
     hookZoneChecking()
     hookBannedPlayers()
     hookBanAsync()
     hookKick()
     hookNamecall()
-    hookHumanoidSpeed()
     hookProximityPrompt()
+    hookStateChanged()
+    hookHumanoidChanged()
+    hookTorsoChanged()
+    hookOverlapParams()
+    hookRaycast()
+    hookAllRemotes()
     clearBanFlags()
     print("[AntiBan] Activated")
 end
@@ -284,6 +421,9 @@ local Settings = {
     Tracer = true,
     HitSound = true,
     WallCheck = false,
+    TeleportEnabled = false,
+    TeleportDistance = 3,
+    TeleportYOffset = 0,
 }
 
 local currentKillauraTarget = nil
@@ -309,11 +449,18 @@ local function getAttackRemote()
     return weapon:FindFirstChild("Attack") or weapon:FindFirstChild("AttackRemote")
 end
 
+local function isValidTarget(target)
+    if not target then return false end
+    if not target.Character then return false end
+    local hum = target.Character:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return false end
+    return true
+end
+
 local function getClosestTarget()
     local char = LocalPlayer.Character
     if not char then return nil end
     if not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return nil end
-    
     local originPart = char:FindFirstChild("HumanoidRootPart")
     if not originPart then return nil end
     local originPos = originPart.Position
@@ -327,11 +474,10 @@ local function getClosestTarget()
 
         local targetChar = plr.Character
         if not targetChar then continue end
-        
         local hum = targetChar:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then continue end
 
-        local targetPart = targetChar:FindFirstChild("HumanoidRootPart")
+        local targetPart = targetChar:FindFirstChild("HumanoidRootPart") or targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("Torso")
         if not targetPart then continue end
 
         if Settings.WallCheck then
@@ -394,6 +540,40 @@ local function playHitSound()
     task.delay(1, function() sound:Destroy() end)
 end
 
+local function teleportToTarget(target, yOffset)
+    if not target or not target.Character then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return end
+    
+    local targetCFrame = targetRoot.CFrame
+    local behindPos = targetCFrame.Position - targetCFrame.LookVector * Settings.TeleportDistance
+    behindPos = behindPos + Vector3.new(0, yOffset or Settings.TeleportYOffset, 0)
+    
+    root.CFrame = CFrame.new(behindPos, targetCFrame.Position)
+end
+
+local function followTarget(target, yOffset)
+    if not target or not target.Character then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return end
+    
+    local targetCFrame = targetRoot.CFrame
+    local behindPos = targetCFrame.Position - targetCFrame.LookVector * Settings.TeleportDistance
+    behindPos = behindPos + Vector3.new(0, yOffset or Settings.TeleportYOffset, 0)
+    
+    root.CFrame = CFrame.new(behindPos, targetCFrame.Position)
+end
+
 local function fireRagebot(target)
     if not target then return end
     local remote = getAttackRemote()
@@ -405,8 +585,11 @@ local function fireRagebot(target)
     local originPart = char:FindFirstChild("HumanoidRootPart")
     if not originPart then return end
 
+    local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("Torso")
+    if not targetPart then return end
+    
     local origin = originPart.Position
-    local hitPos = target.Position
+    local hitPos = targetPart.Position
     local direction = (hitPos - origin).Unit
     local cframe = CFrame.new(hitPos, hitPos + direction)
 
@@ -426,8 +609,11 @@ local function fireKillaura(target)
     local originPart = char:FindFirstChild("HumanoidRootPart")
     if not originPart then return end
 
+    local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("Torso")
+    if not targetPart then return end
+
     local origin = originPart.Position
-    local hitPos = target.Position
+    local hitPos = targetPart.Position
     local direction = (hitPos - origin).Unit
     local cframe = CFrame.new(hitPos, hitPos + direction)
 
@@ -436,14 +622,28 @@ local function fireKillaura(target)
     remote:FireServer(target.Player, cframe)
 end
 
+local function resetTarget()
+    currentKillauraTarget = nil
+    if killauraLoop then
+        task.cancel(killauraLoop)
+        killauraLoop = nil
+    end
+    if Settings.KillauraEnabled then
+        startKillaura()
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    resetTarget()
+end)
+
 local function startRagebot()
     if ragebotLoop then return end
     ragebotLoop = task.spawn(function()
         while Settings.RagebotEnabled do
             local target = getClosestTarget()
-            if target then
-                pcall(fireRagebot, target)
-            end
+            if target then pcall(fireRagebot, target) end
             task.wait(Settings.Interval)
         end
         ragebotLoop = nil
@@ -454,15 +654,24 @@ local function startKillaura()
     if killauraLoop then return end
     killauraLoop = task.spawn(function()
         while Settings.KillauraEnabled do
-            local target = getClosestTarget()
-            if target then
-                pcall(fireKillaura, target)
-            else
-                task.wait(0.1)
+            if not isValidTarget(currentKillauraTarget) then
+                currentKillauraTarget = getClosestTarget()
+                if currentKillauraTarget and Settings.TeleportEnabled then
+                    teleportToTarget(currentKillauraTarget)
+                end
             end
+            
+            if isValidTarget(currentKillauraTarget) then
+                if Settings.TeleportEnabled then
+                    followTarget(currentKillauraTarget)
+                end
+                pcall(fireKillaura, currentKillauraTarget)
+            end
+            
             task.wait(Settings.Interval)
         end
         killauraLoop = nil
+        currentKillauraTarget = nil
     end)
 end
 
@@ -480,39 +689,40 @@ MainGroup:AddToggle("Killaura", {
     Default = false,
     Callback = function(v)
         Settings.KillauraEnabled = v
-        if v then startKillaura() end
+        if v then startKillaura() else currentKillauraTarget = nil end
     end
 })
 
 MainGroup:AddToggle("Team Check", {
     Text = "Team Check",
     Default = true,
-    Callback = function(v)
-        Settings.TeamCheck = v
-    end
+    Callback = function(v) Settings.TeamCheck = v end
 })
 
 MainGroup:AddToggle("Wall Check", {
     Text = "Wall Check",
     Default = false,
-    Callback = function(v)
-        Settings.WallCheck = v
-    end
+    Callback = function(v) Settings.WallCheck = v end
 })
 
 MainGroup:AddToggle("Tracer", {
     Text = "Bullet Tracer",
     Default = true,
-    Callback = function(v)
-        Settings.Tracer = v
-    end
+    Callback = function(v) Settings.Tracer = v end
 })
 
 MainGroup:AddToggle("Hit Sound", {
     Text = "Hit Sound",
     Default = true,
+    Callback = function(v) Settings.HitSound = v end
+})
+
+MainGroup:AddToggle("Teleport Behind", {
+    Text = "传送Aura需要先开启killaura",
+    Default = false,
     Callback = function(v)
-        Settings.HitSound = v
+        Settings.TeleportEnabled = v
+        if not v then currentKillauraTarget = nil end
     end
 })
 
@@ -521,9 +731,7 @@ MainGroup:AddSlider("Range", {
     Default = 20,
     Min = 5,
     Max = 100,
-    Callback = function(v)
-        Settings.Range = v
-    end
+    Callback = function(v) Settings.Range = v end
 })
 
 MainGroup:AddSlider("Interval", {
@@ -531,9 +739,24 @@ MainGroup:AddSlider("Interval", {
     Default = 80,
     Min = 50,
     Max = 500,
-    Callback = function(v)
-        Settings.Interval = v / 1000
-    end
+    Callback = function(v) Settings.Interval = v / 1000 end
+})
+
+MainGroup:AddSlider("Teleport Distance", {
+    Text = "Teleport Distance",
+    Default = 3,
+    Min = 1,
+    Max = 10,
+    Callback = function(v) Settings.TeleportDistance = v end
+})
+
+MainGroup:AddSlider("Teleport Y Offset", {
+    Text = "Teleport Y Offset",
+    Default = 0,
+    Min = -20,
+    Max = 20,
+    Decimals = 0.1,
+    Callback = function(v) Settings.TeleportYOffset = v end
 })
 
 local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu", "wrench")
