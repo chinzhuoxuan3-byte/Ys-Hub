@@ -1,4 +1,6 @@
---开源项目
+--开源
+--作者Yeskid
+--2.0主要针对新更新的反作弊进行绕过+修复killaura和ragebot
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
@@ -14,31 +16,94 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
+    Combat = Window:AddTab("Combat", "sword"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
 }
 
 local MainGroup = Tabs.Main:AddLeftGroupbox("主功能区")
+local CombatGroup = Tabs.Combat:AddLeftGroupbox("战斗功能")
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local StarterPlayer = game:GetService("StarterPlayer")
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-
 local antiBanActive = false
 local RemoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+local WeaponUsing = RemoteEvents and RemoteEvents:FindFirstChild("Weapon_Using")
 local Banned = RemoteEvents and RemoteEvents:FindFirstChild("Banned")
+local Message = RemoteEvents and RemoteEvents:FindFirstChild("Message")
 local ClientEffect = RemoteEvents and RemoteEvents:FindFirstChild("ClientEffect")
 local ZoneChecking = RemoteEvents and RemoteEvents:FindFirstChild("ZoneChecking")
 
-if not Banned then
-    for _, obj in getnilinstances() do
-        if obj:IsA("RemoteEvent") and obj.Name == "Banned" then
-            Banned = obj
-            break
+local hookedFunctions = {}
+local hookedRemotes = {}
+
+local function safeHookFunction(func, hook)
+    if not func then return end
+    for i, v in ipairs(hookedFunctions) do
+        if v.original == func then return v.hook end
+    end
+    local success, h = pcall(function()
+        return hookfunction(func, hook)
+    end)
+    if success then
+        table.insert(hookedFunctions, {original = func, hook = h})
+        return h
+    end
+    return nil
+end
+
+local function safeHookRemote(remote)
+    if hookedRemotes[remote] then return end
+    if remote and remote.FireServer then
+        local old = remote.FireServer
+        local success = pcall(function()
+            remote.FireServer = function(self, ...)
+                local args = {...}
+                for i, v in ipairs(args) do
+                    if type(v) == "string" then
+                        local lower = string.lower(v)
+                        if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "作弊") or string.find(lower, "穿墙") or string.find(lower, "加速") or string.find(lower, "飞行") or string.find(lower, "freefall") or string.find(lower, "falling") then
+                            args[i] = ""
+                        end
+                    end
+                    if type(v) == "number" and v < 0 then args[i] = 1 end
+                    if type(v) == "table" then
+                        if v.Type == "AFK" or v.Type == "In" then return end
+                        if v.Player == LocalPlayer then return end
+                    end
+                end
+                return old(self, unpack(args))
+            end
+        end)
+        if success then hookedRemotes[remote] = true end
+    end
+    if remote and remote.InvokeServer then
+        pcall(function()
+            remote.InvokeServer = function(self, ...) return nil end
+        end)
+    end
+end
+
+local function hookAllRemotesInFolder(folder)
+    if not folder then return end
+    for _, child in ipairs(folder:GetChildren()) do
+        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+            safeHookRemote(child)
+        elseif child:IsA("Folder") or child:IsA("Model") then
+            hookAllRemotesInFolder(child)
         end
     end
+end
+
+local function deepHookRemotes()
+    pcall(function() hookAllRemotesInFolder(ReplicatedStorage) end)
 end
 
 local function hookBannedWho()
@@ -46,13 +111,9 @@ local function hookBannedWho()
         if type(v) == "function" then
             local info = debug.getinfo(v)
             if info and info.name == "BannedWho" then
-                pcall(function()
-                    hookfunction(v, function(self, player, duration, reason)
-                        if player == LocalPlayer then
-                            return nil
-                        end
-                        return v(self, player, duration, reason)
-                    end)
+                safeHookFunction(v, function(self, player, duration, reason)
+                    if player == LocalPlayer then return nil end
+                    return v(self, player, duration, reason)
                 end)
                 return true
             end
@@ -61,94 +122,24 @@ local function hookBannedWho()
     return false
 end
 
-local function hookBannedRemote()
-    if Banned then
-        pcall(function()
-            local oldFire = Banned.FireServer
-            Banned.FireServer = function(self, ...)
-                local args = {...}
-                if type(args[1]) == "number" and args[1] < 0 then
-                    return nil
-                end
-                if type(args[2]) == "string" and args[2] then
-                    local reason = args[2]
-                    if string.find(reason, "封禁") or string.find(reason, "ban") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速") or string.find(reason, "飞行") then
-                        return nil
-                    end
-                end
-                return oldFire(self, unpack(args))
-            end
-        end)
-        pcall(function()
-            local oldInvoke = Banned.InvokeServer
-            Banned.InvokeServer = function(self, ...)
-                return nil
-            end
-        end)
-    end
-end
-
-local function hookClientEffect()
-    if ClientEffect then
-        pcall(function()
-            local oldFire = ClientEffect.FireServer
-            ClientEffect.FireServer = function(self, ...)
-                local args = {...}
-                if type(args[1]) == "number" and args[1] < 0 then
-                    return nil
-                end
-                if type(args[2]) == "string" then
-                    local reason = args[2]
-                    if string.find(reason, "封禁") or string.find(reason, "ban") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速") or string.find(reason, "飞行") then
-                        return nil
-                    end
-                end
-                return oldFire(self, unpack(args))
-            end
-        end)
-        pcall(function()
-            local oldInvoke = ClientEffect.InvokeServer
-            ClientEffect.InvokeServer = function(self, ...)
-                return nil
-            end
-        end)
-    end
-end
-
-local function hookZoneChecking()
-    if ZoneChecking then
-        pcall(function()
-            local oldFire = ZoneChecking.FireServer
-            ZoneChecking.FireServer = function(self, ...)
-                local args = {...}
-                if type(args[1]) == "table" and args[1] then
-                    if args[1].Type == "AFK" or args[1].Type == "In" then
-                        return nil
-                    end
-                end
-                return oldFire(self, unpack(args))
-            end
-        end)
-    end
-end
-
-local function hookBannedPlayers()
+local function hookBannedPlayersTable()
     for _, v in getgc(true) do
         if type(v) == "table" and rawget(v, "BannedPlayers") then
             pcall(function()
-                local oldIndex = v.__index
-                v.__index = function(t, k)
-                    if k == LocalPlayer then
-                        return nil
+                local mt = getrawmetatable(v)
+                if mt then
+                    setreadonly(mt, false)
+                    local oldIndex = mt.__index
+                    mt.__index = function(t, k)
+                        if k == LocalPlayer then return nil end
+                        return oldIndex and oldIndex(t, k)
                     end
-                    return oldIndex(t, k)
-                end
-                local oldNewIndex = v.__newindex
-                v.__newindex = function(t, k, val)
-                    if k == LocalPlayer then
-                        return nil
+                    local oldNewIndex = mt.__newindex
+                    mt.__newindex = function(t, k, val)
+                        if k == LocalPlayer then return nil end
+                        return oldNewIndex and oldNewIndex(t, k, val)
                     end
-                    return oldNewIndex(t, k, val)
+                    setreadonly(mt, true)
                 end
             end)
             return true
@@ -163,9 +154,7 @@ local function hookBanAsync()
         Players.BanAsync = function(self, options)
             if options and options.UserIds then
                 for _, id in ipairs(options.UserIds) do
-                    if id == LocalPlayer.UserId then
-                        return nil
-                    end
+                    if id == LocalPlayer.UserId then return nil end
                 end
             end
             return oldBan(self, options)
@@ -177,8 +166,11 @@ local function hookKick()
     pcall(function()
         local oldKick = LocalPlayer.Kick
         LocalPlayer.Kick = function(self, reason)
-            if reason and (string.find(reason, "ban") or string.find(reason, "封禁") or string.find(reason, "作弊") or string.find(reason, "穿墙") or string.find(reason, "加速")) then
-                return nil
+            if reason and type(reason) == "string" then
+                local lower = string.lower(reason)
+                if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "cheat") or string.find(lower, "作弊") or string.find(lower, "穿墙") or string.find(lower, "加速") or string.find(lower, "飞行") or string.find(lower, "freefall") then
+                    return nil
+                end
             end
             return oldKick(self, reason)
         end
@@ -186,44 +178,41 @@ local function hookKick()
 end
 
 local function hookNamecall()
-    local mt = getrawmetatable(game)
-    if not mt then return end
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-    mt.__namecall = function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" or method == "BanAsync" then
-            if self == LocalPlayer or self == Players then
-                return nil
+    pcall(function()
+        local mt = getrawmetatable(game)
+        if not mt then return end
+        setreadonly(mt, false)
+        local oldNamecall = mt.__namecall
+        mt.__namecall = function(self, ...)
+            local method = getnamecallmethod()
+            if method == "Kick" or method == "BanAsync" then
+                if self == LocalPlayer or self == Players then return nil end
             end
-        end
-        if method == "FireServer" or method == "InvokeServer" then
-            if self and self.Name then
-                local nameLower = string.lower(self.Name)
-                if string.find(nameLower, "ban") or string.find(nameLower, "kick") or string.find(nameLower, "banned") then
-                    return nil
-                end
-            end
-        end
-        return oldNamecall(self, ...)
-    end
-    setreadonly(mt, true)
-end
-
-local function hookProximityPrompt()
-    for _, prompt in pairs(Workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            pcall(function()
-                local oldChanged = prompt.Changed
-                prompt.Changed = function(self, property)
-                    if property == "HoldDuration" then
+            if method == "FireServer" or method == "InvokeServer" then
+                if self and self.Name then
+                    local nameLower = string.lower(self.Name)
+                    if string.find(nameLower, "ban") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "cheat") then
                         return nil
                     end
-                    return oldChanged(self, property)
                 end
-            end)
+                local args = {...}
+                for i, v in ipairs(args) do
+                    if type(v) == "string" then
+                        local lower = string.lower(v)
+                        if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "作弊") or string.find(lower, "穿墙") or string.find(lower, "加速") or string.find(lower, "飞行") then
+                            args[i] = ""
+                        end
+                    end
+                    if type(v) == "number" and v < 0 then args[i] = 1 end
+                    if type(v) == "table" and v.Type == "AFK" then return nil end
+                    if type(v) == "table" and v.Player == LocalPlayer then return nil end
+                end
+                return oldNamecall(self, unpack(args))
+            end
+            return oldNamecall(self, ...)
         end
-    end
+        setreadonly(mt, true)
+    end)
 end
 
 local function hookStateChanged()
@@ -231,13 +220,11 @@ local function hookStateChanged()
         if type(v) == "function" then
             local info = debug.getinfo(v)
             if info and info.name == "StateChanged" then
-                pcall(function()
-                    hookfunction(v, function(self, oldState, newState)
-                        if newState == Enum.HumanoidStateType.Freefall or newState == Enum.HumanoidStateType.FallingDown then
-                            return nil
-                        end
-                        return v(self, oldState, newState)
-                    end)
+                safeHookFunction(v, function(self, oldState, newState)
+                    if newState == Enum.HumanoidStateType.Freefall or newState == Enum.HumanoidStateType.FallingDown then
+                        return nil
+                    end
+                    return v(self, oldState, newState)
                 end)
             end
         end
@@ -245,44 +232,54 @@ local function hookStateChanged()
 end
 
 local function hookHumanoidChanged()
-    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
+    local function hookHumanoid(humanoid)
+        if not humanoid then return end
         pcall(function()
             local oldChanged = humanoid.Changed
-            hookfunction(humanoid.Changed, function(self, property)
+            humanoid.Changed = function(self, property)
                 if property == "WalkSpeed" or property == "JumpPower" then
                     return nil
                 end
                 return oldChanged(self, property)
-            end)
+            end
         end)
     end
+    hookHumanoid(LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid"))
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.1)
+        hookHumanoid(char:FindFirstChildOfClass("Humanoid"))
+    end)
 end
 
 local function hookTorsoChanged()
+    local function hookTorso(torso)
+        if not torso then return end
+        pcall(function()
+            local oldChanged = torso.Changed
+            torso.Changed = function(self, property)
+                if property == "CanCollide" then return nil end
+                return oldChanged(self, property)
+            end
+        end)
+    end
     local char = LocalPlayer.Character
     if char then
-        local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-        if torso then
-            pcall(function()
-                local oldChanged = torso.Changed
-                hookfunction(torso.Changed, function(self, property)
-                    if property == "CanCollide" then
-                        return nil
-                    end
-                    return oldChanged(self, property)
-                end)
-            end)
-        end
+        hookTorso(char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"))
     end
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.1)
+        hookTorso(char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"))
+    end)
 end
 
 local function hookOverlapParams()
     for _, v in getgc(true) do
-        if type(v) == "table" and rawget(v, "FilterType") and rawget(v, "IncludeInstances") then
+        if type(v) == "table" and rawget(v, "FilterType") then
             pcall(function()
+                setreadonly(v, false)
                 v.IncludeInstances = {}
                 v.FilterDescendantsInstances = {}
+                setreadonly(v, true)
             end)
         end
     end
@@ -306,7 +303,104 @@ local function hookRaycast()
     end)
 end
 
-local function clearBanFlags()
+local function hookPlayerInfo()
+    local function clearPlayerInfo(char)
+        if not char then return end
+        local playerInfo = char:FindFirstChild("PlayerInfo")
+        if playerInfo then
+            for _, obj in ipairs(playerInfo:GetChildren()) do
+                local nameLower = string.lower(obj.Name)
+                if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "detect") or string.find(nameLower, "committed") or string.find(nameLower, "infection") then
+                    pcall(function()
+                        if obj:IsA("BoolValue") then obj.Value = false end
+                        if obj:IsA("NumberValue") or obj:IsA("IntValue") then obj.Value = 0 end
+                        if obj:IsA("StringValue") then obj.Value = "" end
+                    end)
+                end
+            end
+        end
+    end
+    clearPlayerInfo(LocalPlayer.Character)
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.1)
+        clearPlayerInfo(char)
+    end)
+end
+
+local function hookWorkspaceChildren()
+    local function checkAndRemove(obj)
+        pcall(function()
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = 999
+            end
+            if obj:IsA("Sound") and obj.Name and string.find(string.lower(obj.Name), "alert") then
+                obj.Volume = 0
+            end
+        end)
+    end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        checkAndRemove(obj)
+    end
+    Workspace.DescendantAdded:Connect(function(obj)
+        checkAndRemove(obj)
+    end)
+end
+
+local function hookGui()
+    pcall(function()
+        local playerGui = LocalPlayer.PlayerGui
+        for _, gui in pairs(playerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                local nameLower = string.lower(gui.Name)
+                if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "alert") or string.find(nameLower, "detect") then
+                    gui.Enabled = false
+                end
+            end
+        end
+    end)
+end
+
+local function hookRemoteEventsTable()
+    for _, v in getgc(true) do
+        if type(v) == "table" and rawget(v, "RemoteEvents") then
+            pcall(function()
+                setreadonly(v, false)
+                local oldIndex = v.__index
+                v.__index = function(t, k)
+                    if k == "Banned" or k == "BannedWho" or k == "ClientEffect" then
+                        return nil
+                    end
+                    return oldIndex and oldIndex(t, k)
+                end
+                setreadonly(v, true)
+            end)
+        end
+    end
+end
+
+local function hookVirtualUser()
+    pcall(function()
+        local oldCapture = VirtualUser.CaptureController
+        VirtualUser.CaptureController = function(self)
+            return nil
+        end
+    end)
+end
+
+local function hookGamePasses()
+    for _, v in getgc(true) do
+        if type(v) == "table" and rawget(v, "failedGP") then
+            pcall(function()
+                setreadonly(v, false)
+                v.failedGP = {}
+                v.Gamepass = {}
+                setreadonly(v, true)
+            end)
+        end
+    end
+end
+
+local function clearBanFlagsLoop()
     task.spawn(function()
         while antiBanActive do
             local char = LocalPlayer.Character
@@ -314,7 +408,7 @@ local function clearBanFlags()
                 for _, obj in ipairs(char:GetDescendants()) do
                     if obj:IsA("BoolValue") or obj:IsA("NumberValue") or obj:IsA("StringValue") or obj:IsA("IntValue") then
                         local nameLower = string.lower(obj.Name)
-                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "detect") then
+                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "detect") or string.find(nameLower, "committed") or string.find(nameLower, "infection") then
                             pcall(function()
                                 if obj:IsA("BoolValue") then obj.Value = false end
                                 if obj:IsA("NumberValue") or obj:IsA("IntValue") then obj.Value = 0 end
@@ -327,7 +421,7 @@ local function clearBanFlags()
                 if playerInfo then
                     for _, obj in ipairs(playerInfo:GetChildren()) do
                         local nameLower = string.lower(obj.Name)
-                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") then
+                        if string.find(nameLower, "ban") or string.find(nameLower, "flag") or string.find(nameLower, "kick") or string.find(nameLower, "banned") or string.find(nameLower, "committed") or string.find(nameLower, "infection") then
                             pcall(function()
                                 if obj:IsA("BoolValue") then obj.Value = false end
                                 if obj:IsA("NumberValue") or obj:IsA("IntValue") then obj.Value = 0 end
@@ -337,52 +431,105 @@ local function clearBanFlags()
                     end
                 end
             end
-            task.wait(0.1)
+            task.wait(0.05)
         end
     end)
 end
 
-local function hookAllRemotes()
-    local events = {}
-    for _, obj in getnilinstances() do
-        if obj:IsA("RemoteEvent") then
-            table.insert(events, obj)
-        end
-    end
-    local function searchFolder(folder)
-        if not folder then return end
-        for _, child in ipairs(folder:GetChildren()) do
-            if child:IsA("RemoteEvent") then
-                table.insert(events, child)
-            end
-            if child:IsA("Folder") or child:IsA("Model") then
-                searchFolder(child)
-            end
-        end
-    end
-    searchFolder(ReplicatedStorage)
-    searchFolder(Workspace)
-    for _, event in ipairs(events) do
+local function hookWeaponUsing()
+    if WeaponUsing then
         pcall(function()
-            local oldFire = event.FireServer
-            event.FireServer = function(self, ...)
+            local oldFire = WeaponUsing.FireServer
+            WeaponUsing.FireServer = function(self, ...)
                 local args = {...}
                 for i, v in ipairs(args) do
                     if type(v) == "string" then
-                        if string.find(string.lower(v), "ban") or string.find(string.lower(v), "kick") or string.find(string.lower(v), "封禁") or string.find(string.lower(v), "作弊") then
+                        local lower = string.lower(v)
+                        if string.find(lower, "ban") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "封禁") or string.find(lower, "作弊") then
                             args[i] = ""
                         end
                     end
-                    if type(v) == "number" and v < 0 then
-                        args[i] = 0
+                    if type(v) == "number" and v < 0 then args[i] = 1 end
+                end
+                return oldFire(self, unpack(args))
+            end
+        end)
+    end
+end
+
+local function hookBannedRemote()
+    if Banned then
+        pcall(function()
+            local oldFire = Banned.FireServer
+            Banned.FireServer = function(self, ...)
+                local args = {...}
+                for i, v in ipairs(args) do
+                    if type(v) == "string" then
+                        local lower = string.lower(v)
+                        if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "作弊") or string.find(lower, "穿墙") or string.find(lower, "加速") or string.find(lower, "飞行") then
+                            args[i] = ""
+                        end
                     end
-                    if type(v) == "boolean" and v == true then
-                        if string.find(string.lower(event.Name), "ban") or string.find(string.lower(event.Name), "kick") or string.find(string.lower(event.Name), "banned") then
-                            args[i] = false
+                    if type(v) == "number" and v < 0 then args[i] = 1 end
+                    if type(v) == "table" and v.Player == LocalPlayer then return end
+                    if type(v) == "Instance" and v == RemoteEvents then return end
+                end
+                return oldFire(self, unpack(args))
+            end
+            local oldInvoke = Banned.InvokeServer
+            Banned.InvokeServer = function(self, ...) return nil end
+        end)
+    end
+end
+
+local function hookMessage()
+    if Message then
+        pcall(function()
+            local oldFire = Message.FireClient
+            Message.FireClient = function(self, player, text, ...)
+                if player == LocalPlayer then
+                    if text and type(text) == "string" then
+                        local lower = string.lower(text)
+                        if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "作弊") or string.find(lower, "检测") or string.find(lower, "detect") then
+                            return nil
                         end
                     end
                 end
+                return oldFire(self, player, text, ...)
+            end
+        end)
+    end
+end
+
+local function hookClientEffect()
+    if ClientEffect then
+        pcall(function()
+            local oldFire = ClientEffect.FireServer
+            ClientEffect.FireServer = function(self, ...)
+                local args = {...}
+                for i, v in ipairs(args) do
+                    if type(v) == "string" then
+                        local lower = string.lower(v)
+                        if string.find(lower, "ban") or string.find(lower, "封禁") or string.find(lower, "kick") or string.find(lower, "cheat") or string.find(lower, "作弊") then
+                            args[i] = ""
+                        end
+                    end
+                    if type(v) == "number" and v < 0 then args[i] = 1 end
+                end
                 return oldFire(self, unpack(args))
+            end
+        end)
+    end
+end
+
+local function hookZoneChecking()
+    if ZoneChecking then
+        pcall(function()
+            local oldFire = ZoneChecking.FireServer
+            ZoneChecking.FireServer = function(self, data)
+                if data and data.Type == "AFK" then return end
+                if data and data.Type == "In" then return end
+                return oldFire(self, data)
             end
         end)
     end
@@ -391,22 +538,34 @@ end
 local function enableAntiBan()
     if antiBanActive then return end
     antiBanActive = true
-    hookBannedWho()
-    hookBannedRemote()
-    hookClientEffect()
-    hookZoneChecking()
-    hookBannedPlayers()
-    hookBanAsync()
-    hookKick()
-    hookNamecall()
-    hookProximityPrompt()
-    hookStateChanged()
-    hookHumanoidChanged()
-    hookTorsoChanged()
-    hookOverlapParams()
-    hookRaycast()
-    hookAllRemotes()
-    clearBanFlags()
+    
+    pcall(function()
+        hookBannedWho()
+        hookBannedPlayersTable()
+        hookBanAsync()
+        hookKick()
+        hookNamecall()
+        hookProximityPrompt()
+        hookStateChanged()
+        hookHumanoidChanged()
+        hookTorsoChanged()
+        hookOverlapParams()
+        hookRaycast()
+        hookPlayerInfo()
+        hookWorkspaceChildren()
+        hookGui()
+        hookRemoteEventsTable()
+        hookVirtualUser()
+        hookGamePasses()
+        hookWeaponUsing()
+        hookBannedRemote()
+        hookMessage()
+        hookClientEffect()
+        hookZoneChecking()
+        deepHookRemotes()
+        clearBanFlagsLoop()
+    end)
+    
     print("[AntiBan] Activated")
 end
 
@@ -415,6 +574,7 @@ enableAntiBan()
 local Settings = {
     RagebotEnabled = false,
     KillauraEnabled = false,
+    SilentAimEnabled = false,
     TeamCheck = true,
     Range = 20,
     Interval = 0.08,
@@ -424,29 +584,66 @@ local Settings = {
     TeleportEnabled = false,
     TeleportDistance = 3,
     TeleportYOffset = 0,
+    AutoReload = false,
+    AutoEquip = false,
+    HeadshotChance = 50,
 }
 
 local currentKillauraTarget = nil
 local killauraLoop = nil
 local ragebotLoop = nil
+local silentAimLoop = nil
+local reloading = false
+local lastReloadTime = 0
 
 local function getWeapon()
     local char = LocalPlayer.Character
     if not char then return nil end
-    local tool = char:FindFirstChild("\230\139\179\229\164\180")
-    if not tool then
-        tool = char:FindFirstChild("\231\148\181\229\135\187\230\158\170")
-        if not tool then
-            tool = char:FindFirstChildOfClass("Tool")
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") then
+            return child
         end
     end
-    return tool
+    return nil
 end
 
-local function getAttackRemote()
-    local weapon = getWeapon()
+local function getWeaponAmmo(weapon)
     if not weapon then return nil end
-    return weapon:FindFirstChild("Attack") or weapon:FindFirstChild("AttackRemote")
+    for _, child in ipairs(weapon:GetDescendants()) do
+        if child:IsA("NumberValue") and string.find(string.lower(child.Name), "ammo") then
+            return child
+        end
+        if child:IsA("IntValue") and string.find(string.lower(child.Name), "ammo") then
+            return child
+        end
+    end
+    return nil
+end
+
+local function getWeaponMaxAmmo(weapon)
+    if not weapon then return nil end
+    for _, child in ipairs(weapon:GetDescendants()) do
+        if child:IsA("NumberValue") and string.find(string.lower(child.Name), "max") then
+            return child
+        end
+        if child:IsA("IntValue") and string.find(string.lower(child.Name), "max") then
+            return child
+        end
+    end
+    return nil
+end
+
+local function getWeaponReloadTime(weapon)
+    if not weapon then return 1.5 end
+    for _, child in ipairs(weapon:GetDescendants()) do
+        if child:IsA("NumberValue") and string.find(string.lower(child.Name), "reloadtime") then
+            return child.Value
+        end
+        if child:IsA("NumberValue") and string.find(string.lower(child.Name), "reload") then
+            return child.Value
+        end
+    end
+    return 1.5
 end
 
 local function isValidTarget(target)
@@ -460,7 +657,8 @@ end
 local function getClosestTarget()
     local char = LocalPlayer.Character
     if not char then return nil end
-    if not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return nil end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return nil end
     local originPart = char:FindFirstChild("HumanoidRootPart")
     if not originPart then return nil end
     local originPos = originPart.Position
@@ -474,8 +672,8 @@ local function getClosestTarget()
 
         local targetChar = plr.Character
         if not targetChar then continue end
-        local hum = targetChar:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then continue end
+        local targetHum = targetChar:FindFirstChildOfClass("Humanoid")
+        if not targetHum or targetHum.Health <= 0 then continue end
 
         local targetPart = targetChar:FindFirstChild("HumanoidRootPart") or targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("Torso")
         if not targetPart then continue end
@@ -495,7 +693,8 @@ local function getClosestTarget()
                 Character = targetChar,
                 Part = targetPart,
                 Position = targetPart.Position,
-                Player = plr
+                Player = plr,
+                Humanoid = targetHum
             }
         end
     end
@@ -540,7 +739,54 @@ local function playHitSound()
     task.delay(1, function() sound:Destroy() end)
 end
 
-local function teleportToTarget(target, yOffset)
+local function getTargetPart(target)
+    local parts = {"HumanoidRootPart", "Head", "Torso", "UpperTorso", "LowerTorso"}
+    for _, name in ipairs(parts) do
+        local part = target.Character:FindFirstChild(name)
+        if part then return part end
+    end
+    return nil
+end
+
+local function getHitPosition(target)
+    local part = getTargetPart(target)
+    if not part then return nil end
+    if math.random(1, 100) <= Settings.HeadshotChance then
+        local head = target.Character:FindFirstChild("Head")
+        if head then return head.Position end
+    end
+    return part.Position
+end
+
+local function fireWeapon(target)
+    if not target or not WeaponUsing then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return end
+    
+    local hitPos = getHitPosition(target)
+    if not hitPos then return end
+    
+    local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
+    if not targetHum then return end
+    
+    createTracer(char.HumanoidRootPart.Position, hitPos)
+    playHitSound()
+    
+    local args = {
+        targetHum,
+        "攻击",
+        {
+            ["命中位置"] = hitPos
+        }
+    }
+    pcall(function()
+        WeaponUsing:FireServer(unpack(args))
+    end)
+end
+
+local function teleportToTarget(target)
     if not target or not target.Character then return end
     local char = LocalPlayer.Character
     if not char then return end
@@ -552,74 +798,75 @@ local function teleportToTarget(target, yOffset)
     
     local targetCFrame = targetRoot.CFrame
     local behindPos = targetCFrame.Position - targetCFrame.LookVector * Settings.TeleportDistance
-    behindPos = behindPos + Vector3.new(0, yOffset or Settings.TeleportYOffset, 0)
+    behindPos = behindPos + Vector3.new(0, Settings.TeleportYOffset, 0)
     
     root.CFrame = CFrame.new(behindPos, targetCFrame.Position)
 end
 
-local function followTarget(target, yOffset)
-    if not target or not target.Character then return end
+local function triggerReload()
+    local weapon = getWeapon()
+    if not weapon then return end
+    
+    local attack = weapon:FindFirstChild("Attack")
+    if attack then
+        pcall(function()
+            attack:FireServer(nil, "Reload")
+        end)
+    end
+end
+
+local function autoReload()
+    if not Settings.AutoReload then return end
+    if reloading then return end
+    
+    local weapon = getWeapon()
+    if not weapon then return end
+    
+    local ammo = getWeaponAmmo(weapon)
+    local maxAmmo = getWeaponMaxAmmo(weapon)
+    
+    if ammo and maxAmmo then
+        if ammo.Value <= 0 and ammo.Value < maxAmmo.Value then
+            reloading = true
+            triggerReload()
+            local reloadTime = getWeaponReloadTime(weapon)
+            task.wait(reloadTime)
+            reloading = false
+        end
+    end
+end
+
+local function autoEquipBestWeapon()
+    if not Settings.AutoEquip then return end
     local char = LocalPlayer.Character
     if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    
-    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-    if not targetRoot then return end
-    
-    local targetCFrame = targetRoot.CFrame
-    local behindPos = targetCFrame.Position - targetCFrame.LookVector * Settings.TeleportDistance
-    behindPos = behindPos + Vector3.new(0, yOffset or Settings.TeleportYOffset, 0)
-    
-    root.CFrame = CFrame.new(behindPos, targetCFrame.Position)
-end
-
-local function fireRagebot(target)
-    if not target then return end
-    local remote = getAttackRemote()
-    if not remote then return end
-
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
-
-    local originPart = char:FindFirstChild("HumanoidRootPart")
-    if not originPart then return end
-
-    local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("Torso")
-    if not targetPart then return end
-    
-    local origin = originPart.Position
-    local hitPos = targetPart.Position
-    local direction = (hitPos - origin).Unit
-    local cframe = CFrame.new(hitPos, hitPos + direction)
-
-    createTracer(origin, hitPos)
-    playHitSound()
-    remote:FireServer(target.Player, cframe)
-end
-
-local function fireKillaura(target)
-    if not target then return end
-    local remote = getAttackRemote()
-    if not remote then return end
-
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
-
-    local originPart = char:FindFirstChild("HumanoidRootPart")
-    if not originPart then return end
-
-    local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("Torso")
-    if not targetPart then return end
-
-    local origin = originPart.Position
-    local hitPos = targetPart.Position
-    local direction = (hitPos - origin).Unit
-    local cframe = CFrame.new(hitPos, hitPos + direction)
-
-    createTracer(origin, hitPos)
-    playHitSound()
-    remote:FireServer(target.Player, cframe)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local weapons = {}
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") then
+            table.insert(weapons, child)
+        end
+    end
+    local backpack = LocalPlayer.Backpack
+    if backpack then
+        for _, child in ipairs(backpack:GetChildren()) do
+            if child:IsA("Tool") then
+                table.insert(weapons, child)
+            end
+        end
+    end
+    if #weapons == 0 then return end
+    local current = getWeapon()
+    local best = weapons[1]
+    for _, w in ipairs(weapons) do
+        if w.Name and best.Name and #w.Name > #best.Name then
+            best = w
+        end
+    end
+    if current ~= best then
+        hum:EquipTool(best)
+    end
 end
 
 local function resetTarget()
@@ -643,7 +890,14 @@ local function startRagebot()
     ragebotLoop = task.spawn(function()
         while Settings.RagebotEnabled do
             local target = getClosestTarget()
-            if target then pcall(fireRagebot, target) end
+            if target then
+                pcall(fireWeapon, target)
+                if Settings.TeleportEnabled then
+                    pcall(teleportToTarget, target)
+                end
+            end
+            if Settings.AutoReload then pcall(autoReload) end
+            if Settings.AutoEquip then pcall(autoEquipBestWeapon) end
             task.wait(Settings.Interval)
         end
         ragebotLoop = nil
@@ -656,22 +910,44 @@ local function startKillaura()
         while Settings.KillauraEnabled do
             if not isValidTarget(currentKillauraTarget) then
                 currentKillauraTarget = getClosestTarget()
-                if currentKillauraTarget and Settings.TeleportEnabled then
-                    teleportToTarget(currentKillauraTarget)
-                end
             end
             
             if isValidTarget(currentKillauraTarget) then
                 if Settings.TeleportEnabled then
-                    followTarget(currentKillauraTarget)
+                    pcall(teleportToTarget, currentKillauraTarget)
                 end
-                pcall(fireKillaura, currentKillauraTarget)
+                pcall(fireWeapon, currentKillauraTarget)
             end
             
+            if Settings.AutoReload then pcall(autoReload) end
+            if Settings.AutoEquip then pcall(autoEquipBestWeapon) end
             task.wait(Settings.Interval)
         end
         killauraLoop = nil
         currentKillauraTarget = nil
+    end)
+end
+
+local function startSilentAim()
+    if silentAimLoop then return end
+    silentAimLoop = task.spawn(function()
+        while Settings.SilentAimEnabled do
+            local target = getClosestTarget()
+            if target and target.Part then
+                local hitPos = getHitPosition(target)
+                if hitPos then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            root.CFrame = CFrame.new(root.Position, hitPos)
+                        end
+                    end
+                end
+            end
+            task.wait(0.01)
+        end
+        silentAimLoop = nil
     end)
 end
 
@@ -680,7 +956,7 @@ MainGroup:AddToggle("Ragebot", {
     Default = false,
     Callback = function(v)
         Settings.RagebotEnabled = v
-        if v then startRagebot() end
+        if v then startRagebot() else if ragebotLoop then task.cancel(ragebotLoop) ragebotLoop = nil end end
     end
 })
 
@@ -690,6 +966,15 @@ MainGroup:AddToggle("Killaura", {
     Callback = function(v)
         Settings.KillauraEnabled = v
         if v then startKillaura() else currentKillauraTarget = nil end
+    end
+})
+
+MainGroup:AddToggle("Silent Aim", {
+    Text = "Silent Aim",
+    Default = false,
+    Callback = function(v)
+        Settings.SilentAimEnabled = v
+        if v then startSilentAim() else if silentAimLoop then task.cancel(silentAimLoop) silentAimLoop = nil end end
     end
 })
 
@@ -718,12 +1003,32 @@ MainGroup:AddToggle("Hit Sound", {
 })
 
 MainGroup:AddToggle("Teleport Behind", {
-    Text = "传送Aura需要先开启killaura",
+    Text = "Teleport Behind",
     Default = false,
     Callback = function(v)
         Settings.TeleportEnabled = v
         if not v then currentKillauraTarget = nil end
     end
+})
+
+MainGroup:AddToggle("Auto Reload", {
+    Text = "Auto Reload",
+    Default = false,
+    Callback = function(v) Settings.AutoReload = v end
+})
+
+MainGroup:AddToggle("Auto Equip Best", {
+    Text = "Auto Equip Best Weapon",
+    Default = false,
+    Callback = function(v) Settings.AutoEquip = v end
+})
+
+CombatGroup:AddSlider("Headshot Chance", {
+    Text = "Headshot Chance (%)",
+    Default = 50,
+    Min = 0,
+    Max = 100,
+    Callback = function(v) Settings.HeadshotChance = v end
 })
 
 MainGroup:AddSlider("Range", {
