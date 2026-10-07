@@ -1,0 +1,5696 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local GuiService = game:GetService("GuiService")
+
+local env = (getgenv and getgenv()) or _G
+do
+	local previous = env.__CLICKGUI_LIB
+	if previous then
+		pcall(function()
+			previous:Destroy()
+		end)
+		env.__CLICKGUI_LIB = nil
+	end
+	local legacy = env.__CLICKGUI_V3
+	if legacy then
+		pcall(function()
+			legacy:Destroy()
+		end)
+		env.__CLICKGUI_V3 = nil
+	end
+end
+
+local Assets = {
+	Vape = "rbxassetid://14373395239",
+	Shadow = "rbxassetid://14898786664",
+	Close = "rbxassetid://14368309446",
+	Search = "rbxassetid://14425646684",
+	Settings = "rbxassetid://14368318994",
+	Dots = "rbxassetid://14368314459",
+	ExpandDown = "rbxassetid://14368353032",
+	ExpandUp = "rbxassetid://14368317595",
+	ExpandRight = "rbxassetid://14368316544",
+	Info = "rbxassetid://14368324807",
+	Alert = "rbxassetid://14368301329",
+	Warning = "rbxassetid://14368361552",
+	Combat = "rbxassetid://14368312652",
+	Blatant = "rbxassetid://14368306745",
+	Render = "rbxassetid://14368350193",
+	Utility = "rbxassetid://14368359107",
+	World = "rbxassetid://14368362492",
+	Inventory = "rbxassetid://14928011633",
+	Friends = "rbxassetid://14397462778",
+	Mini = "rbxassetid://14368326029"
+}
+
+local W = Color3.new(1, 1, 1)
+local B = Color3.new(0, 0, 0)
+
+local T = {
+	Font = Enum.Font.SourceSans,
+	FontBold = Enum.Font.SourceSansBold
+}
+
+local DARK = {
+	Bg = Color3.fromRGB(12, 12, 14),
+	Head = Color3.fromRGB(26, 26, 31),
+	Row = Color3.fromRGB(20, 20, 24),
+	RowOn = Color3.fromRGB(240, 240, 244),
+	Set = Color3.fromRGB(8, 8, 10),
+	Text = Color3.fromRGB(230, 230, 236),
+	Sub = Color3.fromRGB(132, 132, 146),
+	OnText = Color3.fromRGB(10, 10, 12),
+	Off = Color3.fromRGB(56, 56, 64),
+	Fill = Color3.fromRGB(240, 240, 244),
+	Rim1 = Color3.fromRGB(242, 242, 248),
+	Rim2 = Color3.fromRGB(58, 58, 66),
+	Box = Color3.fromRGB(6, 6, 8)
+}
+
+local LIGHT = {
+	Bg = Color3.fromRGB(232, 232, 238),
+	Head = Color3.fromRGB(252, 252, 255),
+	Row = Color3.fromRGB(244, 244, 248),
+	RowOn = Color3.fromRGB(14, 14, 17),
+	Set = Color3.fromRGB(222, 222, 229),
+	Text = Color3.fromRGB(20, 20, 24),
+	Sub = Color3.fromRGB(108, 108, 122),
+	OnText = Color3.fromRGB(244, 244, 248),
+	Off = Color3.fromRGB(186, 186, 198),
+	Fill = Color3.fromRGB(14, 14, 17),
+	Rim1 = Color3.fromRGB(255, 255, 255),
+	Rim2 = Color3.fromRGB(96, 96, 110),
+	Box = Color3.fromRGB(250, 250, 253)
+}
+
+local Tints = {
+	["纯黑白"] = nil,
+	["冷银"] = Color3.fromRGB(140, 185, 255),
+	["暖金"] = Color3.fromRGB(255, 200, 110),
+	["玫瑰"] = Color3.fromRGB(255, 150, 175)
+}
+
+local DefaultTheme = {
+	Preset = "Vape 经典",
+	Mode = "深黑",
+	Tint = "纯黑白",
+	AccentHex = "7aa7ff",
+	TintMix = 28,
+	AccentRainbow = false,
+	BgTopHex = "000000",
+	BgBottomHex = "000000",
+	Transparency = 0.12,
+	Gloss = 60,
+	Stroke = 60,
+	StrokeW = 1,
+	Shadow = 100,
+	Corner = 8,
+	PanelStyle = "玻璃",
+	EnabledStyle = "渐变填充",
+	ToggleStyle = "胶囊",
+	Shimmer = true,
+	ShimmerSpeed = 45,
+	PanelW = 170,
+	RowH = 34,
+	UIScale = 100,
+	Blur = 18,
+	Dim = 45,
+	Animations = true,
+	AnimSpeed = 100,
+	Perf = false,
+	FpsShow = false,
+	AutoPerf = false,
+	SoundOn = false,
+	SoundId = "6895079853",
+	SoundVolume = 40,
+	EnabledColor = "主题色",
+	EnabledHexA = "3ddc97",
+	EnabledHexB = "5a8dff",
+	FontName = "默认",
+	BgImageId = "",
+	BgImageOpacity = 30,
+	SafeInset = 0,
+	PanelAlign = "顶部",
+	AutoContrast = true,
+	ColBg = "",
+	ColHead = "",
+	ColRow = "",
+	ColRowOn = "",
+	ColText = "",
+	ColSub = "",
+	ColFill = "",
+	ColRim = "",
+	FreeLayout = false,
+	SliderGuard = true,
+	Cape = false,
+	CapeId = "",
+	CapeHex = "14141a",
+	CapeW = 2,
+	CapeLen = 4,
+	CapeSwing = 100,
+	FontSize = 16,
+	TextShadow = "关闭",
+	PanelGap = 12,
+	RowGap = 0,
+	BarThick = 3,
+	DividerStyle = "实线",
+	GradMode = "跟随主题",
+	GradTopHex = "46464f",
+	GradBottomHex = "0c0c10",
+	Wave = true,
+	Micro = true,
+	GradAngle = 90,
+	GradPos = 46,
+	Density = "标准",
+	QuickShape = "圆形",
+	QuickSize = 46,
+	QuickLabel = "名称",
+	QuickOpacity = 100,
+	FloatShape = "圆角",
+	FloatIconId = "",
+	FlowMode = "主题",
+	FlowSpeed = 40,
+	Ripple = true,
+	Stagger = true,
+	TouchGlow = true,
+	GlowStrength = 50,
+	ShowGrip = true,
+	PinchScale = true,
+	TitleText = "控制台",
+	FloatSize = 46,
+	FloatOpacity = 100,
+	Notifications = true,
+	ToastPos = "顶部居中",
+	HudShow = true,
+	HudPos = "右上",
+	HudSort = "字数",
+	HudColor = "主题",
+	HudHex = "8cb4ff",
+	HudSize = 100,
+	HudBg = true,
+	HudBar = true
+}
+
+local VisualKeys = {
+	"Mode", "Tint", "AccentHex", "TintMix", "AccentRainbow", "BgTopHex", "BgBottomHex",
+	"Transparency", "Gloss", "Stroke", "StrokeW", "Shadow", "Corner",
+	"PanelStyle", "EnabledStyle", "EnabledColor", "EnabledHexA", "EnabledHexB", "FontName", "BgImageId", "BgImageOpacity", "SafeInset", "PanelAlign", "PanelW", "RowH", "ToggleStyle", "Shimmer", "ShimmerSpeed", "Blur", "Dim",
+	"FlowMode", "FlowSpeed", "TouchGlow", "GlowStrength",
+	"GradAngle", "GradPos", "GradMode", "GradTopHex", "GradBottomHex", "Wave", "Micro", "FontSize", "TextShadow", "PanelGap", "RowGap", "BarThick", "DividerStyle", "AutoContrast", "ColBg", "ColHead", "ColRow", "ColRowOn", "ColText", "ColSub", "ColFill", "ColRim", "QuickShape", "QuickSize", "QuickLabel", "QuickOpacity", "FloatShape"
+}
+
+local PresetNames = {"Vape 经典", "曜石", "陶瓷", "阴阳", "霓虹", "玫瑰金", "极简磨砂", "赛博终端", "彩虹流光", "扁平紧凑"}
+
+local Presets = {
+	["Vape 经典"] = {},
+	["扁平紧凑"] = {
+		Mode = "深黑", Corner = 2, PanelStyle = "实心", Transparency = 0, Gloss = 15, Stroke = 0,
+		Shadow = 0, Shimmer = false, EnabledStyle = "纯色填充", EnabledColor = "光谱",
+		PanelW = 150, RowH = 28, FontSize = 15, Wave = false, Micro = false, ColHead = "7bd33a",
+		Dim = 30, Blur = 8
+	},
+	["曜石"] = {
+		Tint = "自定义", AccentHex = "9db4ff", TintMix = 22, Gloss = 90, Transparency = 0.04,
+		Stroke = 85, Corner = 4, PanelStyle = "实心", BgTopHex = "050508", BgBottomHex = "000000",
+		Dim = 60, Blur = 24, FlowMode = "强调色"
+	},
+	["陶瓷"] = {
+		Mode = "亮白", Gloss = 70, Transparency = 0.06, Stroke = 70, Corner = 12, Shadow = 55,
+		BgTopHex = "e6e8ee", BgBottomHex = "9aa0b0", Dim = 35, Blur = 22
+	},
+	["阴阳"] = {
+		Mode = "阴阳", Gloss = 80, Stroke = 90, Corner = 10, Shimmer = true
+	},
+	["霓虹"] = {
+		Tint = "自定义", AccentHex = "ff2fd6", TintMix = 85, Gloss = 45, Transparency = 0.25,
+		Stroke = 100, StrokeW = 2, EnabledStyle = "发光描边", Shimmer = false,
+		BgTopHex = "12002a", BgBottomHex = "00101f", Dim = 55, Blur = 20, Corner = 10, FlowMode = "彩虹", FlowSpeed = 60
+	},
+	["玫瑰金"] = {
+		Tint = "自定义", AccentHex = "ffb4a2", TintMix = 60, Gloss = 80, Transparency = 0.1,
+		Corner = 10, BgTopHex = "1a0d10", BgBottomHex = "000000"
+	},
+	["极简磨砂"] = {
+		Transparency = 0.4, Gloss = 15, Stroke = 35, Corner = 14, EnabledStyle = "左侧光条",
+		Shimmer = false, Blur = 34, Dim = 30, Shadow = 40, FlowMode = "关闭"
+	},
+	["赛博终端"] = {
+		Tint = "自定义", AccentHex = "39ff88", TintMix = 80, Gloss = 25, Corner = 2,
+		PanelStyle = "轻描边", EnabledStyle = "左侧光条", ToggleStyle = "方块", Stroke = 90,
+		Shimmer = false, BgTopHex = "00140a", BgBottomHex = "000000", FlowMode = "强调色"
+	},
+	["彩虹流光"] = {
+		AccentRainbow = true, Gloss = 70, Shimmer = true, ShimmerSpeed = 70, Corner = 10, FlowMode = "彩虹", FlowSpeed = 70
+	}
+}
+
+local animEnabled = true
+local animSpeed = 1
+
+local rainbowSeq
+do
+	local keys = {}
+	for i = 0, 6 do
+		table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(math.min(i / 6, 0.9999), 1, 1)))
+	end
+	rainbowSeq = ColorSequence.new(keys)
+end
+
+local function create(class, props, parent)
+	local obj = Instance.new(class)
+	for k, v in props do
+		obj[k] = v
+	end
+	obj.Parent = parent
+	return obj
+end
+
+local function corner(obj, radius)
+	return create("UICorner", {CornerRadius = UDim.new(0, radius or 6)}, obj)
+end
+
+local function padding(obj, l, r, t, b)
+	return create("UIPadding", {
+		PaddingLeft = UDim.new(0, l or 0),
+		PaddingRight = UDim.new(0, r or 0),
+		PaddingTop = UDim.new(0, t or 0),
+		PaddingBottom = UDim.new(0, b or 0)
+	}, obj)
+end
+
+local function tween(obj, goal, time)
+	TweenService:Create(obj, TweenInfo.new((time or 0.18) / animSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal):Play()
+end
+
+local function apply(obj, goal, animate)
+	if animate and animEnabled then
+		tween(obj, goal, 0.18)
+	else
+		for k, v in goal do
+			obj[k] = v
+		end
+	end
+end
+
+local function randomName()
+	local chars = {}
+	for i = 1, math.random(12, 24) do
+		chars[i] = string.char(math.random(97, 122))
+	end
+	return table.concat(chars)
+end
+
+local function isPointer(input)
+	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+
+local function isMove(input)
+	return input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch
+end
+
+local function sheen(c, g, pos)
+	pos = pos or 0.46
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, c:Lerp(W, 0.26 * g)),
+		ColorSequenceKeypoint.new(pos, c:Lerp(W, 0.05 * g)),
+		ColorSequenceKeypoint.new(pos + 0.04, c:Lerp(B, 0.12 * g)),
+		ColorSequenceKeypoint.new(1, c:Lerp(B, 0.26 * g))
+	})
+end
+
+local function hexColor(hex, fallback)
+	local ok, c = pcall(Color3.fromHex, hex)
+	return ok and c or fallback
+end
+
+local function gradSeq(c, th)
+	local g = th.Gloss / 100
+	local mode = th.GradMode
+	if mode == "双色渐变" then
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, hexColor(th.GradTopHex, c)),
+			ColorSequenceKeypoint.new(1, hexColor(th.GradBottomHex, c))
+		})
+	elseif mode == "金属拉丝" then
+		local pts = {}
+		for i = 0, 8 do
+			local k = (i % 2 == 0) and c:Lerp(W, 0.2 * g) or c:Lerp(B, 0.1 * g)
+			table.insert(pts, ColorSequenceKeypoint.new(i / 8, k))
+		end
+		return ColorSequence.new(pts)
+	elseif mode == "玻璃" then
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, c:Lerp(W, 0.42 * g)),
+			ColorSequenceKeypoint.new(0.14, c:Lerp(W, 0.08 * g)),
+			ColorSequenceKeypoint.new(0.55, c),
+			ColorSequenceKeypoint.new(1, c:Lerp(B, 0.2 * g))
+		})
+	end
+	return sheen(c, g, th.GradPos / 100)
+end
+
+local function textShadow(label, th)
+	local s = th.TextShadow
+	if th.Perf or s == "关闭" then
+		label.TextStrokeTransparency = 1
+	else
+		label.TextStrokeColor3 = B
+		label.TextStrokeTransparency = s == "重" and 0.45 or 0.75
+	end
+end
+
+local dividerNone = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 0)})
+local dividerFade = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})
+local dividerDots
+do
+	local pts = {}
+	for i = 0, 4 do
+		local c = i * 0.2
+		table.insert(pts, NumberSequenceKeypoint.new(c, 0))
+		table.insert(pts, NumberSequenceKeypoint.new(c + 0.12, 0))
+		table.insert(pts, NumberSequenceKeypoint.new(c + 0.121, 1))
+		table.insert(pts, NumberSequenceKeypoint.new(i == 4 and 1 or c + 0.199, 1))
+	end
+	dividerDots = NumberSequence.new(pts)
+end
+
+local function rimSeq(p)
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, p.Rim1),
+		ColorSequenceKeypoint.new(0.5, p.Rim2),
+		ColorSequenceKeypoint.new(1, p.Rim1)
+	})
+end
+
+local function borderSeq(th, p)
+	local mode = th.FlowMode
+	if mode == "彩虹" then
+		return rainbowSeq
+	elseif mode == "强调色" then
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, p.Accent),
+			ColorSequenceKeypoint.new(0.5, p.Rim2),
+			ColorSequenceKeypoint.new(1, p.Accent)
+		})
+	end
+	return rimSeq(p)
+end
+
+local function makeGlass(obj, radius)
+	obj.BackgroundColor3 = W
+	local c = corner(obj, radius)
+	local grad = create("UIGradient", {Rotation = 90}, obj)
+	local stroke = create("UIStroke", {Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, obj)
+	local sg = create("UIGradient", {Rotation = 45}, stroke)
+	local tracked = false
+	local function style(window, p, base, r)
+		local th = window.Theme
+		local perf = th.Perf
+		obj.BackgroundColor3 = perf and (base or p.Bg) or W
+		obj.BackgroundTransparency = th.Transparency
+		grad.Color = gradSeq(base or p.Bg, th)
+		grad.Rotation = th.GradAngle
+		grad.Enabled = not perf
+		c.CornerRadius = UDim.new(0, r or th.Corner)
+		stroke.Color = perf and p.Rim2 or W
+		stroke.Transparency = 1 - th.Stroke / 100
+		stroke.Thickness = th.StrokeW
+		sg.Color = borderSeq(th, p)
+		sg.Enabled = not perf
+		if not tracked then
+			tracked = true
+			window.FlowList[sg] = true
+		end
+		if th.FlowMode == "关闭" or perf then
+			sg.Rotation = 45
+		end
+	end
+	return style, stroke
+end
+
+local function extraOf(module)
+	if not module.ExtraText then
+		return nil
+	end
+	local ok, res = pcall(module.ExtraText)
+	if ok and res ~= nil and tostring(res) ~= "" then
+		return tostring(res)
+	end
+	return nil
+end
+
+local function sanitize(name)
+	name = tostring(name or ""):gsub("[^%w_%-\128-\255]", "")
+	if name == "" then
+		name = "default"
+	end
+	return name
+end
+
+local Maid = {}
+Maid.__index = Maid
+
+function Maid.new()
+	return setmetatable({Items = {}}, Maid)
+end
+
+function Maid:Give(item)
+	table.insert(self.Items, item)
+	return item
+end
+
+function Maid:Clean()
+	for _, item in self.Items do
+		local kind = typeof(item)
+		if kind == "RBXScriptConnection" then
+			pcall(function()
+				item:Disconnect()
+			end)
+		elseif kind == "Instance" then
+			pcall(function()
+				item:Destroy()
+			end)
+		elseif kind == "function" then
+			pcall(item)
+		end
+	end
+	table.clear(self.Items)
+end
+
+local function Builder(window, parent, P, options, onAdd, onChange)
+	local b = {}
+	local order = 0
+
+	local function nextOrder()
+		order += 1
+		return order
+	end
+
+	local function added()
+		if onAdd then
+			onAdd()
+		end
+	end
+
+	local function changed()
+		if onChange then
+			onChange()
+		end
+	end
+
+	local function text(parentObj, content, size, position, textSize)
+		return create("TextLabel", {
+			Size = size,
+			Position = position,
+			BackgroundTransparency = 1,
+			Text = content,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextSize = textSize or 15,
+			Font = T.Font
+		}, parentObj)
+	end
+
+	local function bindSlide(hit, track, onValue, onActive)
+		hit.InputBegan:Connect(function(input)
+			if not isPointer(input) then return end
+			local guard = window.Theme.SliderGuard and input.UserInputType == Enum.UserInputType.Touch
+			local startPos = input.Position
+			local active = not guard
+			local dead = false
+			local function update(pos)
+				onValue(math.clamp((pos.X - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1))
+			end
+			local function engage(pos)
+				active = true
+				window:Lock(true)
+				if onActive then
+					onActive(true)
+				end
+				update(pos)
+			end
+			if active then
+				engage(input.Position)
+			end
+			window:StartDrag(input, function(cur)
+				if dead then return end
+				if not active then
+					local dx = math.abs(cur.Position.X - startPos.X)
+					local dy = math.abs(cur.Position.Y - startPos.Y)
+					if dx >= 6 and dx > dy * 1.2 then
+						engage(cur.Position)
+					elseif dy >= 8 then
+						dead = true
+					end
+					return
+				end
+				update(cur.Position)
+			end, function()
+				if active then
+					window:Lock(false)
+					if onActive then
+						onActive(false)
+					end
+				end
+			end)
+		end)
+	end
+
+	function b:CreateDivider(content)
+		local item = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 26),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local label = text(item, content, UDim2.new(1, -28, 1, 0), UDim2.fromOffset(14, 2), 13)
+		label.Font = T.FontBold
+		local line = create("Frame", {
+			Size = UDim2.new(1, -28, 0, 1),
+			Position = UDim2.new(0, 14, 1, -3),
+			BorderSizePixel = 0
+		}, item)
+		local lineGrad = create("UIGradient", {}, line)
+		window:Reg(function()
+			local p = P()
+			local style = window.Theme.DividerStyle
+			label.TextColor3 = p.Sub
+			line.BackgroundColor3 = p.Off
+			line.Visible = style ~= "隐藏"
+			lineGrad.Transparency = style == "渐隐" and dividerFade or (style == "点线" and dividerDots or dividerNone)
+		end)
+	end
+
+	function b:CreateToggle(s)
+		added()
+		local api = {Type = "Toggle", Value = false}
+		local item = create("TextButton", {
+			Size = UDim2.new(1, 0, 0, 32),
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local label = text(item, s.Name, UDim2.new(1, -64, 1, 0), UDim2.fromOffset(14, 0))
+		local track = create("Frame", {
+			Size = UDim2.fromOffset(34, 18),
+			Position = UDim2.new(1, -48, 0.5, -9),
+			BorderSizePixel = 0
+		}, item)
+		local trackCorner = corner(track, 9)
+		local knob = create("Frame", {
+			Size = UDim2.fromOffset(14, 14),
+			Position = UDim2.fromOffset(2, 2),
+			BorderSizePixel = 0
+		}, track)
+		local knobCorner = corner(knob, 7)
+		local cb = s.Callback or s.Function or function() end
+		local function refresh(animate)
+			local p = P()
+			local on = api.Value
+			local square = window.Theme.ToggleStyle == "方块"
+			trackCorner.CornerRadius = UDim.new(0, square and 3 or 9)
+			knobCorner.CornerRadius = UDim.new(0, square and 2 or 7)
+			label.TextColor3 = p.Text
+			apply(track, {BackgroundColor3 = on and p.Fill or p.Off}, animate)
+			apply(knob, {
+				BackgroundColor3 = on and p.OnText or p.Text,
+				Size = UDim2.fromOffset(14, 14),
+				Position = UDim2.fromOffset(on and 18 or 2, 2)
+			}, animate)
+		end
+		window:Reg(refresh)
+		function api:SetValue(state, silent)
+			self.Value = state
+			refresh(true)
+			if not silent then
+				window:Safe(s.Name, cb, state)
+				changed()
+			end
+		end
+		function api:Save()
+			return self.Value
+		end
+		function api:Load(v)
+			if type(v) == "boolean" and v ~= self.Value then
+				self:SetValue(v)
+			end
+		end
+		item.ClipsDescendants = true
+		item.InputBegan:Connect(function(input)
+			if isPointer(input) then
+				window:Ripple(item, input)
+				local th = window.Theme
+				if th.Micro and th.Animations and not th.Perf then
+					tween(knob, {Size = UDim2.fromOffset(20, 14), Position = UDim2.fromOffset(api.Value and 12 or 2, 2)}, 0.1)
+				end
+			end
+		end)
+		item.InputEnded:Connect(function(input)
+			if isPointer(input) then
+				refresh(true)
+			end
+		end)
+		item.MouseButton1Click:Connect(function()
+			api:SetValue(not api.Value)
+		end)
+		if s.Default then
+			api:SetValue(true, true)
+		end
+		if options then
+			options[s.Name] = api
+		end
+		return api
+	end
+
+	function b:CreateSlider(s)
+		added()
+		local min, max = s.Min or 0, s.Max or 100
+		local step = s.Step or 1
+		local api = {Type = "Slider", Value = s.Default or min}
+		local item = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 46),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local label = text(item, s.Name, UDim2.new(0.6, 0, 0, 22), UDim2.fromOffset(14, 2))
+		local valueLabel = create("TextLabel", {
+			Size = UDim2.new(0.4, -14, 0, 22),
+			Position = UDim2.new(0.6, 0, 0, 2),
+			BackgroundTransparency = 1,
+			Text = "",
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextSize = 14,
+			Font = T.Font
+		}, item)
+		local valueBtn = create("TextButton", {
+			Size = UDim2.new(0.4, -14, 0, 22),
+			Position = UDim2.new(0.6, 0, 0, 2),
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false,
+			ZIndex = 3
+		}, item)
+		local valueBox = create("TextBox", {
+			Size = UDim2.new(0.4, -14, 0, 22),
+			Position = UDim2.new(0.6, 0, 0, 2),
+			BorderSizePixel = 0,
+			Text = "",
+			TextSize = 14,
+			Font = T.Font,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			ClearTextOnFocus = false,
+			Visible = false,
+			ZIndex = 4
+		}, item)
+		corner(valueBox, 4)
+		local track = create("Frame", {
+			Size = UDim2.new(1, -28, 0, 4),
+			Position = UDim2.fromOffset(14, 32),
+			BorderSizePixel = 0
+		}, item)
+		corner(track, 2)
+		local fill = create("Frame", {
+			Size = UDim2.fromScale(0, 1),
+			BorderSizePixel = 0
+		}, track)
+		corner(fill, 2)
+		local knob = create("Frame", {
+			Size = UDim2.fromOffset(14, 14),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(1, 0.5),
+			BorderSizePixel = 0
+		}, fill)
+		corner(knob, 10)
+		local knobStroke = create("UIStroke", {Thickness = 1, Transparency = 0.6}, knob)
+		local hit = create("TextButton", {
+			Size = UDim2.new(1, 0, 0, 24),
+			Position = UDim2.fromOffset(0, 22),
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false
+		}, item)
+		local cb = s.Callback or s.Function or function() end
+		window:Reg(function()
+			local p = P()
+			label.TextColor3 = p.Text
+			valueLabel.TextColor3 = p.Sub
+			valueBox.BackgroundColor3 = p.Box
+			valueBox.TextColor3 = p.Text
+			track.BackgroundColor3 = p.Off
+			fill.BackgroundColor3 = p.Fill
+			knob.BackgroundColor3 = p.Fill
+			knobStroke.Color = p.Rim2
+		end)
+		function api:SetValue(value, silent)
+			value = math.clamp(math.floor(value / step + 0.5) * step, min, max)
+			local different = value ~= self.Value
+			self.Value = value
+			fill.Size = UDim2.fromScale(math.clamp((value - min) / (max - min), 0, 1), 1)
+			valueLabel.Text = tostring(value) .. (s.Suffix and (" " .. s.Suffix) or "")
+			if not silent and different then
+				window:Safe(s.Name, cb, value)
+				changed()
+			end
+		end
+		function api:Save()
+			return self.Value
+		end
+		function api:Load(v)
+			if type(v) == "number" then
+				self:SetValue(v)
+			end
+		end
+		valueBtn.MouseButton1Click:Connect(function()
+			valueBox.Text = tostring(api.Value)
+			valueBox.Visible = true
+			valueBox:CaptureFocus()
+		end)
+		valueBox.FocusLost:Connect(function()
+			local n = tonumber(valueBox.Text)
+			valueBox.Visible = false
+			if n then
+				api:SetValue(n)
+			end
+		end)
+		bindSlide(hit, track, function(rel)
+			api:SetValue(min + (max - min) * rel)
+		end, function(active)
+			local th = window.Theme
+			if th.Micro and th.Animations and not th.Perf then
+				local d = active and 21 or 14
+				tween(knob, {Size = UDim2.fromOffset(d, d)}, 0.12)
+				tween(knobStroke, {Thickness = active and 4 or 1, Transparency = active and 0.72 or 0.6}, 0.12)
+			end
+		end)
+		api:SetValue(s.Default or min, true)
+		if options then
+			options[s.Name] = api
+		end
+		return api
+	end
+
+	function b:CreateDropdown(s)
+		added()
+		local list = s.List
+		local api = {Type = "Dropdown", Value = s.Default or list[1] or "无"}
+		local wrap = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 36),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local box = create("Frame", {
+			Size = UDim2.new(1, -20, 0, 28),
+			Position = UDim2.fromOffset(10, 4),
+			BorderSizePixel = 0,
+			ClipsDescendants = true
+		}, wrap)
+		corner(box, 6)
+		local boxStroke = create("UIStroke", {Thickness = 1, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, box)
+		local head = create("TextButton", {
+			Size = UDim2.new(1, 0, 0, 28),
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false
+		}, box)
+		local title = create("TextLabel", {
+			Size = UDim2.new(1, -32, 1, 0),
+			Position = UDim2.fromOffset(10, 0),
+			BackgroundTransparency = 1,
+			Text = "",
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextSize = 14,
+			Font = T.Font,
+			TextTruncate = Enum.TextTruncate.AtEnd
+		}, head)
+		local arrow = create("ImageLabel", {
+			Size = UDim2.fromOffset(4, 8),
+			Position = UDim2.new(1, -16, 0.5, -4),
+			BackgroundTransparency = 1,
+			Image = Assets.ExpandRight,
+			Rotation = 90
+		}, head)
+		local optionsFrame = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			Position = UDim2.fromOffset(0, 28),
+			BackgroundTransparency = 1
+		}, box)
+		local buttons = {}
+		local opened = false
+		local cb = s.Callback or s.Function or function() end
+
+		local function clearButtons()
+			for _, v in buttons do
+				v:Destroy()
+			end
+			table.clear(buttons)
+		end
+
+		local token = 0
+		local function setOpen(state)
+			opened = state
+			token += 1
+			local mine = token
+			local count = 0
+			if state then
+				clearButtons()
+				local p = P()
+				for _, value in list do
+					if value ~= api.Value then
+						count += 1
+						local button = create("TextButton", {
+							Size = UDim2.new(1, 0, 0, 24),
+							Position = UDim2.fromOffset(0, (count - 1) * 24),
+							BackgroundColor3 = p.Text,
+							BackgroundTransparency = 1,
+							BorderSizePixel = 0,
+							Text = "     " .. tostring(value),
+							TextXAlignment = Enum.TextXAlignment.Left,
+							TextColor3 = p.Sub,
+							TextSize = 14,
+							Font = T.Font,
+							AutoButtonColor = false
+						}, optionsFrame)
+						button.MouseEnter:Connect(function()
+							button.BackgroundTransparency = 0.9
+							button.TextColor3 = P().Text
+						end)
+						button.MouseLeave:Connect(function()
+							button.BackgroundTransparency = 1
+							button.TextColor3 = P().Sub
+						end)
+						button.MouseButton1Click:Connect(function()
+							api:SetValue(value)
+						end)
+						table.insert(buttons, button)
+					end
+				end
+			else
+				task.delay(0.22, function()
+					if token == mine then
+						clearButtons()
+					end
+				end)
+			end
+			tween(arrow, {Rotation = state and 270 or 90}, 0.15)
+			apply(wrap, {Size = UDim2.new(1, 0, 0, 36 + count * 24)}, true)
+			apply(box, {Size = UDim2.new(1, -20, 0, 28 + count * 24)}, true)
+			apply(optionsFrame, {Size = UDim2.new(1, 0, 0, count * 24)}, true)
+		end
+		api.SetOpen = function(_, state)
+			setOpen(state)
+		end
+
+		local function refresh()
+			local p = P()
+			title.Text = s.Name .. " - " .. tostring(api.Value)
+			title.TextColor3 = p.Text
+			arrow.ImageColor3 = p.Sub
+			box.BackgroundColor3 = p.Box
+			boxStroke.Color = p.Rim2
+		end
+		window:Reg(refresh)
+
+		function api:SetValue(value, silent)
+			if table.find(list, value) then
+				self.Value = value
+			end
+			refresh()
+			setOpen(false)
+			if not silent then
+				window:Safe(s.Name, cb, self.Value)
+				changed()
+			end
+		end
+		function api:SetList(newList)
+			list = newList
+			if not table.find(list, self.Value) then
+				self.Value = list[1] or "无"
+			end
+			refresh()
+			setOpen(false)
+		end
+		function api:Save()
+			return self.Value
+		end
+		function api:Load(v)
+			if table.find(list, v) and v ~= self.Value then
+				self:SetValue(v)
+			end
+		end
+		head.MouseButton1Click:Connect(function()
+			setOpen(not opened)
+		end)
+		if options then
+			options[s.Name] = api
+		end
+		return api
+	end
+
+	function b:CreateTextBox(s)
+		added()
+		local api = {Type = "TextBox", Value = s.Default or ""}
+		local item = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 56),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local label = text(item, s.Name, UDim2.new(1, -28, 0, 22), UDim2.fromOffset(14, 2))
+		local holder = create("Frame", {
+			Size = UDim2.new(1, -28, 0, 28),
+			Position = UDim2.fromOffset(14, 24),
+			BorderSizePixel = 0
+		}, item)
+		corner(holder, 5)
+		local holderStroke = create("UIStroke", {Thickness = 1, Transparency = 0.5}, holder)
+		local box = create("TextBox", {
+			Size = UDim2.new(1, -14, 1, 0),
+			Position = UDim2.fromOffset(8, 0),
+			BackgroundTransparency = 1,
+			Text = api.Value,
+			PlaceholderText = s.Placeholder or "点击输入",
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextSize = 14,
+			Font = T.Font,
+			ClearTextOnFocus = false
+		}, holder)
+		local cb = s.Callback or s.Function or function() end
+		if s.Live then
+			box:GetPropertyChangedSignal("Text"):Connect(function()
+				pcall(s.Live, box.Text)
+			end)
+		end
+		window:Reg(function()
+			local p = P()
+			label.TextColor3 = p.Text
+			holder.BackgroundColor3 = p.Box
+			holderStroke.Color = p.Rim2
+			box.TextColor3 = p.Text
+			box.PlaceholderColor3 = p.Sub
+		end)
+		function api:SetValue(content, silent)
+			self.Value = tostring(content)
+			box.Text = self.Value
+			if not silent then
+				window:Safe(s.Name, cb, self.Value)
+				changed()
+			end
+		end
+		function api:Save()
+			return self.Value
+		end
+		function api:Load(v)
+			if type(v) == "string" then
+				self:SetValue(v)
+			end
+		end
+		box.FocusLost:Connect(function()
+			if box.Text ~= api.Value then
+				api:SetValue(box.Text)
+			end
+		end)
+		if options then
+			options[s.Name] = api
+		end
+		return api
+	end
+
+	function b:CreateButton(s)
+		added()
+		local holder = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 38),
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		local button = create("TextButton", {
+			Size = UDim2.new(1, -28, 0, 28),
+			Position = UDim2.fromOffset(14, 5),
+			Text = "",
+			AutoButtonColor = false
+		}, holder)
+		local btnLabel = create("TextLabel", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Text = s.Name,
+			TextSize = 15,
+			Font = T.FontBold,
+			ZIndex = 5
+		}, button)
+		local style = makeGlass(button, 6)
+		button.ClipsDescendants = true
+		button.InputBegan:Connect(function(input)
+			if isPointer(input) then
+				window:Ripple(button, input)
+			end
+		end)
+		window:Reg(function()
+			local p = P()
+			style(window, p, p.Head, 6)
+			btnLabel.TextColor3 = p.HeadText
+			textShadow(btnLabel, window.Theme)
+		end)
+		button.MouseButton1Click:Connect(function()
+			apply(button, {BackgroundTransparency = math.max(window.Theme.Transparency - 0.12, 0)}, true)
+			task.delay(0.12, function()
+				apply(button, {BackgroundTransparency = window.Theme.Transparency}, true)
+			end)
+			window:Safe(s.Name, s.Callback or s.Function or function() end)
+		end)
+	end
+
+	function b:CreateColorPicker(s)
+		added()
+		local h0, s0, v0 = (s.Default or Color3.fromRGB(255, 255, 255)):ToHSV()
+		local api = {Type = "Color", Hue = h0, Sat = s0, Val = v0, Rainbow = false, ThemeKey = s.ThemeKey}
+		local cb = s.Callback or s.Function or function() end
+
+		local item = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder()
+		}, parent)
+		create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, item)
+		local head = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 30),
+			BackgroundTransparency = 1,
+			LayoutOrder = 1
+		}, item)
+		local label = text(head, s.Name, UDim2.new(1, -124, 1, 0), UDim2.fromOffset(14, 0))
+		local rainbowBtn = create("TextButton", {
+			Size = UDim2.fromOffset(42, 20),
+			Position = UDim2.new(1, -110, 0.5, -10),
+			Text = "彩虹",
+			TextSize = 13,
+			Font = T.FontBold,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+			Visible = not s.NoRainbow
+		}, head)
+		corner(rainbowBtn, 10)
+		local rbStroke = create("UIStroke", {Thickness = 1, Transparency = 0.4}, rainbowBtn)
+		local expandBtn = create("TextButton", {
+			Size = UDim2.fromOffset(24, 30),
+			Position = UDim2.new(1, -62, 0, 0),
+			BackgroundTransparency = 1,
+			Text = ""
+		}, head)
+		local expandIcon = create("ImageLabel", {
+			Size = UDim2.fromOffset(10, 5),
+			Position = UDim2.fromOffset(7, 13),
+			BackgroundTransparency = 1,
+			Image = Assets.ExpandDown
+		}, expandBtn)
+		local preview = create("Frame", {
+			Size = UDim2.fromOffset(16, 16),
+			Position = UDim2.new(1, -30, 0.5, -8),
+			BorderSizePixel = 0
+		}, head)
+		corner(preview, 8)
+		local previewStroke = create("UIStroke", {Thickness = 1, Transparency = 0.4}, preview)
+
+		local function makeRow(parentObj, rowOrder, caption, height)
+			local row = create("Frame", {
+				Size = UDim2.new(1, 0, 0, height),
+				BackgroundTransparency = 1,
+				LayoutOrder = rowOrder
+			}, parentObj)
+			local cap
+			if caption then
+				cap = text(row, caption, UDim2.fromOffset(46, height), UDim2.fromOffset(14, 0), 12)
+			end
+			local x = caption and 62 or 14
+			local track = create("Frame", {
+				Size = UDim2.new(1, -(x + 14), 0, 6),
+				Position = UDim2.new(0, x, 0.5, -3),
+				BackgroundColor3 = W,
+				BorderSizePixel = 0
+			}, row)
+			corner(track, 3)
+			local grad = create("UIGradient", {}, track)
+			local knob = create("Frame", {
+				Size = UDim2.fromOffset(14, 14),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0, 0.5),
+				BackgroundColor3 = W,
+				BorderSizePixel = 0
+			}, track)
+			corner(knob, 7)
+			local ks = create("UIStroke", {Thickness = 1.5, Color = Color3.fromRGB(20, 20, 24), Transparency = 0.2}, knob)
+			local hit = create("TextButton", {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				Text = "",
+				AutoButtonColor = false
+			}, row)
+			return {Row = row, Track = track, Grad = grad, Knob = knob, Caption = cap, Hit = hit}
+		end
+
+		local hueRow = makeRow(item, 2, nil, 26)
+		hueRow.Grad.Color = rainbowSeq
+		local extra = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Visible = false,
+			LayoutOrder = 3
+		}, item)
+		create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, extra)
+		local satRow = makeRow(extra, 1, "饱和度", 28)
+		local valRow = makeRow(extra, 2, "明度", 28)
+
+		local function visual()
+			local c = Color3.fromHSV(api.Hue, api.Sat, api.Val)
+			preview.BackgroundColor3 = c
+			hueRow.Knob.Position = UDim2.fromScale(api.Hue, 0.5)
+			hueRow.Knob.BackgroundColor3 = Color3.fromHSV(api.Hue, 1, 1)
+			satRow.Knob.Position = UDim2.fromScale(api.Sat, 0.5)
+			satRow.Knob.BackgroundColor3 = c
+			satRow.Grad.Color = ColorSequence.new(Color3.fromHSV(api.Hue, 0, api.Val), Color3.fromHSV(api.Hue, 1, api.Val))
+			valRow.Knob.Position = UDim2.fromScale(api.Val, 0.5)
+			valRow.Knob.BackgroundColor3 = c
+			valRow.Grad.Color = ColorSequence.new(Color3.fromHSV(api.Hue, api.Sat, 0), Color3.fromHSV(api.Hue, api.Sat, 1))
+		end
+
+		local function refreshStyle()
+			local p = P()
+			label.TextColor3 = p.Text
+			expandIcon.ImageColor3 = p.Sub
+			previewStroke.Color = p.Rim2
+			rbStroke.Color = p.Rim2
+			rainbowBtn.BackgroundColor3 = api.Rainbow and p.Fill or p.Box
+			rainbowBtn.TextColor3 = api.Rainbow and p.OnText or p.Sub
+			if satRow.Caption then
+				satRow.Caption.TextColor3 = p.Sub
+			end
+			if valRow.Caption then
+				valRow.Caption.TextColor3 = p.Sub
+			end
+		end
+		window:Reg(refreshStyle)
+
+		function api:GetColor()
+			return Color3.fromHSV(self.Hue, self.Sat, self.Val)
+		end
+
+		function api:SetHSV(h, sat, val, silent, quiet)
+			self.Hue = h and math.clamp(h, 0, 1) or self.Hue
+			self.Sat = sat and math.clamp(sat, 0, 1) or self.Sat
+			self.Val = val and math.clamp(val, 0, 1) or self.Val
+			visual()
+			if not silent then
+				window:Safe(s.Name, cb, Color3.fromHSV(self.Hue, self.Sat, self.Val))
+				if not quiet then
+					changed()
+				end
+			end
+		end
+
+		function api:SetRainbow(state, silent)
+			self.Rainbow = state
+			window:SetRainbow(self, state)
+			refreshStyle()
+			if not silent then
+				changed()
+			end
+		end
+
+		function api:Save()
+			return {H = self.Hue, S = self.Sat, V = self.Val, R = self.Rainbow}
+		end
+
+		function api:Load(v)
+			if type(v) == "table" and type(v.H) == "number" and type(v.S) == "number" and type(v.V) == "number" then
+				self:SetHSV(v.H, v.S, v.V)
+				self:SetRainbow(v.R == true)
+			end
+		end
+
+		bindSlide(hueRow.Hit, hueRow.Track, function(rel)
+			if api.Rainbow then
+				api:SetRainbow(false)
+			end
+			api:SetHSV(rel)
+		end)
+		bindSlide(satRow.Hit, satRow.Track, function(rel)
+			api:SetHSV(nil, rel)
+		end)
+		bindSlide(valRow.Hit, valRow.Track, function(rel)
+			api:SetHSV(nil, nil, rel)
+		end)
+		expandBtn.MouseButton1Click:Connect(function()
+			extra.Visible = not extra.Visible
+			expandIcon.Rotation = extra.Visible and 180 or 0
+		end)
+		rainbowBtn.MouseButton1Click:Connect(function()
+			api:SetRainbow(not api.Rainbow)
+		end)
+
+		visual()
+		if options then
+			options[s.Name] = api
+		end
+		return api
+	end
+
+	return b
+end
+
+local Library = {}
+Library.__index = Library
+Library.Version = "13.0"
+Library.Folder = "clickgui"
+
+local function luminance(c)
+	return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+end
+
+local function linearChannel(x)
+	if x <= 0.03928 then
+		return x / 12.92
+	end
+	return ((x + 0.055) / 1.055) ^ 2.4
+end
+
+local function relLum(c)
+	return 0.2126 * linearChannel(c.R) + 0.7152 * linearChannel(c.G) + 0.0722 * linearChannel(c.B)
+end
+
+local function contrastRatio(a, b)
+	local l1, l2 = relLum(a), relLum(b)
+	if l1 < l2 then
+		l1, l2 = l2, l1
+	end
+	return (l1 + 0.05) / (l2 + 0.05)
+end
+
+local function ensureContrast(fg, bg, minRatio)
+	if contrastRatio(fg, bg) >= minRatio then
+		return fg
+	end
+	local target = relLum(bg) > 0.4 and B or W
+	for i = 1, 10 do
+		local c = fg:Lerp(target, i / 10)
+		if contrastRatio(c, bg) >= minRatio then
+			return c
+		end
+	end
+	return target
+end
+
+local PinyinChars = "啊阿埃挨哎唉哀皑癌蔼矮艾碍爱隘鞍氨安俺按暗岸胺案肮昂盎凹敖熬翱袄傲奥懊澳芭捌扒叭吧笆八疤巴拔跋靶把耙坝霸罢爸白柏百摆佰败拜稗斑班搬扳般颁板版扮拌伴瓣半办绊邦帮梆榜膀绑棒磅蚌镑傍谤苞胞包褒剥薄雹保堡饱宝抱报暴豹鲍爆杯碑悲卑北辈背贝钡倍狈备惫焙被奔苯本笨崩绷甭泵蹦迸逼鼻比鄙笔彼碧蓖蔽毕毙毖币庇痹闭敝弊必辟壁臂避陛鞭边编贬扁便变卞辨辩辫遍标彪膘表鳖憋别瘪彬斌濒滨宾摈兵冰柄丙秉饼炳病并玻菠播拨钵波博勃搏铂箔伯帛舶脖膊渤泊驳捕卜哺补埠不布步簿部怖擦猜裁材才财睬踩采彩菜蔡餐参蚕残惭惨灿苍舱仓沧藏操糙槽曹草厕策侧册测层蹭插叉茬茶查碴搽察岔差诧拆柴豺搀掺蝉馋谗缠铲产阐颤昌猖场尝常长偿肠厂敞畅唱倡超抄钞朝嘲潮巢吵炒车扯撤掣彻澈郴臣辰尘晨忱沉陈趁衬撑称城橙成呈乘程惩澄诚承逞骋秤吃痴持匙池迟弛驰耻齿侈尺赤翅斥炽充冲虫崇宠抽酬畴踌稠愁筹仇绸瞅丑臭初出橱厨躇锄雏滁除楚础储矗搐触处揣川穿椽传船喘串疮窗幢床闯创吹炊捶锤垂春椿醇唇淳纯蠢戳绰疵茨磁雌辞慈瓷词此刺赐次聪葱囱匆从丛凑粗醋簇促蹿篡窜摧崔催脆瘁粹淬翠村存寸磋撮搓措挫错搭达答瘩打大呆歹傣戴带殆代贷袋待逮怠耽担丹单郸掸胆旦氮但惮淡诞弹蛋当挡党荡档刀捣蹈倒岛祷导到稻悼道盗德得的蹬灯登等瞪凳邓堤低滴迪敌笛狄涤翟嫡抵底地蒂第帝弟递缔颠掂滇碘点典靛垫电佃甸店惦奠淀殿碉叼雕凋刁掉吊钓调跌爹碟蝶迭谍叠丁盯叮钉顶鼎锭定订丢东冬董懂动栋侗恫冻洞兜抖斗陡豆逗痘都督毒犊独读堵睹赌杜镀肚度渡妒端短锻段断缎堆兑队对墩吨蹲敦顿囤钝盾遁掇哆多夺垛躲朵跺舵剁惰堕蛾峨鹅俄额讹娥恶厄扼遏鄂饿恩而儿耳尔饵洱二贰发罚筏伐乏阀法珐藩帆番翻樊矾钒繁凡烦反返范贩犯饭泛坊芳方肪房防妨仿访纺放菲非啡飞肥匪诽吠肺废沸费芬酚吩氛分纷坟焚汾粉奋份忿愤粪丰封枫蜂峰锋风疯烽逢冯缝讽奉凤佛否夫敷肤孵扶拂辐幅氟符伏俘服浮涪福袱弗甫抚辅俯釜斧脯腑府腐赴副覆赋复傅付阜父腹负富讣附妇缚咐噶嘎该改概钙盖溉干甘杆柑竿肝赶感秆敢赣冈刚钢缸肛纲岗港杠篙皋高膏羔糕搞镐稿告哥歌搁戈鸽胳疙割革葛格蛤阁隔铬个各给根跟耕更庚羹埂耿梗工攻功恭龚供躬公宫弓巩汞拱贡共钩勾沟苟狗垢构购够辜菇咕箍估沽孤姑鼓古蛊骨谷股故顾固雇刮瓜剐寡挂褂乖拐怪棺关官冠观管馆罐惯灌贯光广逛瑰规圭硅归龟闺轨鬼诡癸桂柜跪贵刽辊滚棍锅郭国果裹过哈骸孩海氦亥害骇酣憨邯韩含涵寒函喊罕翰撼捍旱憾悍焊汗汉夯杭航壕嚎豪毫郝好耗号浩呵喝荷菏核禾和何合盒貉阂河涸赫褐鹤贺嘿黑痕很狠恨哼亨横衡恒轰哄烘虹鸿洪宏弘红喉侯猴吼厚候后呼乎忽瑚壶葫胡蝴狐糊湖弧虎唬护互沪户花哗华猾滑画划化话槐徊怀淮坏欢环桓还缓换患唤痪豢焕涣宦幻荒慌黄磺蝗簧皇凰惶煌晃幌恍谎灰挥辉徽恢蛔回毁悔慧卉惠晦贿秽会烩汇讳诲绘荤昏婚魂浑混豁活伙火获或惑霍货祸击圾基机畸稽积箕肌饥迹激讥鸡姬绩缉吉极棘辑籍集及急疾汲即嫉级挤几脊己蓟技冀季伎祭剂悸济寄寂计记既忌际妓继纪嘉枷夹佳家加荚颊贾甲钾假稼价架驾嫁歼监坚尖笺间煎兼肩艰奸缄茧检柬碱硷拣捡简俭剪减荐槛鉴践贱见键箭件健舰剑饯渐溅涧建僵姜将浆江疆蒋桨奖讲匠酱降蕉椒礁焦胶交郊浇骄娇嚼搅铰矫侥脚狡角饺缴绞剿教酵轿较叫窖揭接皆秸街阶截劫节桔杰捷睫竭洁结解姐戒藉芥界借介疥诫届巾筋斤金今津襟紧锦仅谨进靳晋禁近烬浸尽劲荆兢茎睛晶鲸京惊精粳经井警景颈静境敬镜径痉靖竟竞净炯窘揪究纠玖韭久灸九酒厩救旧臼舅咎就疚鞠拘狙疽居驹菊局咀矩举沮聚拒据巨具距踞锯俱句惧炬剧捐鹃娟倦眷卷绢撅攫抉掘倔爵觉决诀绝均菌钧军君峻俊竣浚郡骏喀咖卡咯开揩楷凯慨刊堪勘坎砍看康慷糠扛抗亢炕考拷烤靠坷苛柯棵磕颗科壳咳可渴克刻客课肯啃垦恳坑吭空恐孔控抠口扣寇枯哭窟苦酷库裤夸垮挎跨胯块筷侩快宽款匡筐狂框矿眶旷况亏盔岿窥葵奎魁傀馈愧溃坤昆捆困括扩廓阔垃拉喇蜡腊辣啦莱来赖蓝婪栏拦篮阑兰澜谰揽览懒缆烂滥琅榔狼廊郎朗浪捞劳牢老佬姥酪烙涝勒乐雷镭蕾磊累儡垒擂肋类泪棱楞冷厘梨犁黎篱狸离漓理李里鲤礼莉荔吏栗丽厉励砾历利傈例俐痢立粒沥隶力璃哩俩联莲连镰廉怜涟帘敛脸链恋炼练粮凉梁粱良两辆量晾亮谅撩聊僚疗燎寥辽潦了撂镣廖料列裂烈劣猎琳林磷霖临邻鳞淋凛赁吝拎玲菱零龄铃伶羚凌灵陵岭领另令溜琉榴硫馏留刘瘤流柳六龙聋咙笼窿隆垄拢陇楼娄搂篓漏陋芦卢颅庐炉掳卤虏鲁麓碌露路赂鹿潞禄录陆戮驴吕铝侣旅履屡缕虑氯律率滤绿峦挛孪滦卵乱掠略抡轮伦仑沦纶论萝螺罗逻锣箩骡裸落洛骆络妈麻玛码蚂马骂嘛吗埋买麦卖迈脉瞒馒蛮满蔓曼慢漫谩芒茫盲氓忙莽猫茅锚毛矛铆卯茂冒帽貌贸么玫枚梅酶霉煤没眉媒镁每美昧寐妹媚门闷们萌蒙檬盟锰猛梦孟眯醚靡糜迷谜弥米秘觅泌蜜密幂棉眠绵冕免勉娩缅面苗描瞄藐秒渺庙妙蔑灭民抿皿敏悯闽明螟鸣铭名命谬摸摹蘑模膜磨摩魔抹末莫墨默沫漠寞陌谋牟某拇牡亩姆母墓暮幕募慕木目睦牧穆拿哪呐钠那娜纳氖乃奶耐奈南男难囊挠脑恼闹淖呢馁内嫩能妮霓倪泥尼拟你匿腻逆溺蔫拈年碾撵捻念娘酿鸟尿捏聂孽啮镊镍涅您柠狞凝宁拧泞牛扭钮纽脓浓农弄奴努怒女暖虐疟挪懦糯诺哦欧鸥殴藕呕偶沤啪趴爬帕怕琶拍排牌徘湃派攀潘盘磐盼畔判叛乓庞旁耪胖抛咆刨炮袍跑泡呸胚培裴赔陪配佩沛喷盆砰抨烹澎彭蓬棚硼篷膨朋鹏捧碰坯砒霹批披劈琵毗啤脾疲皮匹痞僻屁譬篇偏片骗飘漂瓢票撇瞥拼频贫品聘乒坪苹萍平凭瓶评屏坡泼颇婆破魄迫粕剖扑铺仆莆葡菩蒲埔朴圃普浦谱曝瀑期欺栖戚妻七凄漆柒沏其棋奇歧畦崎脐齐旗祈祁骑起岂乞企启契砌器气迄弃汽泣讫掐恰洽牵扦钎铅千迁签仟谦乾黔钱钳前潜遣浅谴堑嵌欠歉枪呛腔羌墙蔷强抢橇锹敲悄桥瞧乔侨巧鞘撬翘峭俏窍切茄且怯窃钦侵亲秦琴勤芹擒禽寝沁青轻氢倾卿清擎晴氰情顷请庆琼穷秋丘邱球求囚酋泅趋区蛆曲躯屈驱渠取娶龋趣去圈颧权醛泉全痊拳犬券劝缺炔瘸却鹊榷确雀裙群然燃冉染瓤壤攘嚷让饶扰绕惹热壬仁人忍韧任认刃妊纫扔仍日戎茸蓉荣融熔溶容绒冗揉柔肉茹蠕儒孺如辱乳汝入褥软阮蕊瑞锐闰润若弱撒洒萨腮鳃塞赛三叁伞散桑嗓丧搔骚扫嫂瑟色涩森僧莎砂杀刹沙纱傻啥煞筛晒珊苫杉山删煽衫闪陕擅赡膳善汕扇缮墒伤商赏晌上尚裳梢捎稍烧芍勺韶少哨邵绍奢赊蛇舌舍赦摄射慑涉社设砷申呻伸身深娠绅神沈审婶甚肾慎渗声生甥牲升绳省盛剩胜圣师失狮施湿诗尸虱十石拾时什食蚀实识史矢使屎驶始式示士世柿事拭誓逝势是嗜噬适仕侍释饰氏市恃室视试收手首守寿授售受瘦兽蔬枢梳殊抒输叔舒淑疏书赎孰熟薯暑曙署蜀黍鼠属术述树束戍竖墅庶数漱恕刷耍摔衰甩帅栓拴霜双爽谁水睡税吮瞬顺舜说硕朔烁斯撕嘶思私司丝死肆寺嗣四伺似饲巳松耸怂颂送宋讼诵搜艘擞嗽苏酥俗素速粟僳塑溯宿诉肃酸蒜算虽隋随绥髓碎岁穗遂隧祟孙损笋蓑梭唆缩琐索锁所塌他它她塔獭挞蹋踏胎苔抬台泰酞太态汰坍摊贪瘫滩坛檀痰潭谭谈坦毯袒碳探叹炭汤塘搪堂棠膛唐糖倘躺淌趟烫掏涛滔绦萄桃逃淘陶讨套特藤腾疼誊梯剔踢锑提题蹄啼体替嚏惕涕剃屉天添填田甜恬舔腆挑条迢眺跳贴铁帖厅听烃汀廷停亭庭挺艇通桐酮瞳同铜彤童桶捅筒统痛偷投头透凸秃突图徒途涂屠土吐兔湍团推颓腿蜕褪退吞屯臀拖托脱鸵陀驮驼椭妥拓唾挖哇蛙洼娃瓦袜歪外豌弯湾玩顽丸烷完碗挽晚皖惋宛婉万腕汪王亡枉网往旺望忘妄威巍微危韦违桅围唯惟为潍维苇萎委伟伪尾纬未蔚味畏胃喂魏位渭谓尉慰卫瘟温蚊文闻纹吻稳紊问嗡翁瓮挝蜗涡窝我斡卧握沃巫呜钨乌污诬屋无芜梧吾吴毋武五捂午舞伍侮坞戊雾晤物勿务悟误昔熙析西硒矽晰嘻吸锡牺稀息希悉膝夕惜熄烯溪汐犀檄袭席习媳喜铣洗系隙戏细瞎虾匣霞辖暇峡侠狭下厦夏吓掀锨先仙鲜纤咸贤衔舷闲涎弦嫌显险现献县腺馅羡宪陷限线相厢镶香箱襄湘乡翔祥详想响享项巷橡像向象萧硝霄削哮嚣销消宵淆晓小孝校肖啸笑效楔些歇蝎鞋协挟携邪斜胁谐写械卸蟹懈泄泻谢屑薪芯锌欣辛新忻心信衅星腥猩惺兴刑型形邢行醒幸杏性姓兄凶胸匈汹雄熊休修羞朽嗅锈秀袖绣墟戌需虚嘘须徐许蓄酗叙旭序畜恤絮婿绪续轩喧宣悬旋玄选癣眩绚靴薛学穴雪血勋熏循旬询寻驯巡殉汛训讯逊迅压押鸦鸭呀丫芽牙蚜崖衙涯雅哑亚讶焉咽阉烟淹盐严研蜒岩延言颜阎炎沿奄掩眼衍演艳堰燕厌砚雁唁彦焰宴谚验殃央鸯秧杨扬佯疡羊洋阳氧仰痒养样漾邀腰妖瑶摇尧遥窑谣姚咬舀药要耀椰噎耶爷野冶也页掖业叶曳腋夜液一壹医揖铱依伊衣颐夷遗移仪胰疑沂宜姨彝椅蚁倚已乙矣以艺抑易邑屹亿役臆逸肄疫亦裔意毅忆义益溢诣议谊译异翼翌绎茵荫因殷音阴姻吟银淫寅饮尹引隐印英樱婴鹰应缨莹萤营荧蝇迎赢盈影颖硬映哟拥佣臃痈庸雍踊蛹咏泳涌永恿勇用幽优悠忧尤由邮铀犹油游酉有友右佑釉诱又幼迂淤于盂榆虞愚舆余俞逾鱼愉渝渔隅予娱雨与屿禹宇语羽玉域芋郁吁遇喻峪御愈欲狱育誉浴寓裕预豫驭鸳渊冤元垣袁原援辕园员圆猿源缘远苑愿怨院曰约越跃钥岳粤月悦阅耘云郧匀陨允运蕴酝晕韵孕匝砸杂栽哉灾宰载再在咱攒暂赞赃脏葬遭糟凿藻枣早澡蚤躁噪造皂灶燥责择则泽贼怎增憎曾赠扎喳渣札轧铡闸眨栅榨咋乍炸诈摘斋宅窄债寨瞻毡詹粘沾盏斩辗崭展蘸栈占战站湛绽樟章彰漳张掌涨杖丈帐账仗胀瘴障招昭找沼赵照罩兆肇召遮折哲蛰辙者锗蔗这浙珍斟真甄砧臻贞针侦枕疹诊震振镇阵蒸挣睁征狰争怔整拯正政帧症郑证芝枝支吱蜘知肢脂汁之织职直植殖执值侄址指止趾只旨纸志挚掷至致置帜峙制智秩稚质炙痔滞治窒中盅忠钟衷终种肿重仲众舟周州洲诌粥轴肘帚咒皱宙昼骤珠株蛛朱猪诸诛逐竹烛煮拄瞩嘱主著柱助蛀贮铸筑住注祝驻抓爪拽专砖转撰赚篆桩庄装妆撞壮状椎锥追赘坠缀谆准捉拙卓桌琢茁酌啄着灼浊兹咨资姿滋淄孜紫仔籽滓子自渍字鬃棕踪宗综总纵邹走奏揍租足卒族祖诅阻组钻纂嘴醉最罪尊遵昨左佐柞做作坐座曜渲漪"
+local PinyinInitials = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbpbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbpbbbbbbbbbbbbccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccczccccccccccccccccccccccccccccccccccccccccccccccccccsccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffpffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggghggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggghhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjkkkgkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkgkkkkkkkkkkkllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnooooooooppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqgqqqqqqqqrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssscssssssssssssssssssssssssssssssssssssssssssssssssssssttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyxyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzczzzzzyzzzzzzzzzzzzzzzzzzzzzznzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyxy"
+local pinyinMap
+
+local function pinyinOf(str)
+	if not pinyinMap then
+		pinyinMap = {}
+		local i = 0
+		for _, cp in utf8.codes(PinyinChars) do
+			i += 1
+			pinyinMap[utf8.char(cp)] = string.sub(PinyinInitials, i, i)
+		end
+	end
+	local ok, result = pcall(function()
+		local out = {}
+		for _, cp in utf8.codes(str) do
+			local ch = utf8.char(cp)
+			out[#out + 1] = pinyinMap[ch] or string.lower(ch)
+		end
+		return table.concat(out)
+	end)
+	return ok and result or string.lower(str)
+end
+
+function Library:BuildPals()
+	local th = self.Theme
+	local tint = Tints[th.Tint]
+	if th.Tint == "自定义" then
+		local ok, c = pcall(Color3.fromHex, th.AccentHex)
+		tint = ok and c or nil
+	end
+	local mix = math.clamp(th.TintMix / 100, 0, 1)
+	local function ov(key)
+		local h = th[key]
+		if type(h) == "string" and h ~= "" then
+			local ok, c = pcall(Color3.fromHex, h)
+			if ok then
+				return c
+			end
+		end
+	end
+	local function tinted(base)
+		local p = {}
+		for k, v in base do
+			p[k] = v
+		end
+		if tint then
+			p.RowOn = p.RowOn:Lerp(tint, mix)
+			p.Fill = p.Fill:Lerp(tint, mix)
+			p.Rim1 = p.Rim1:Lerp(tint, math.clamp(mix * 1.6, 0, 1))
+			if luminance(p.RowOn) > 0.55 then
+				p.OnText = Color3.fromRGB(10, 10, 12)
+			else
+				p.OnText = Color3.fromRGB(244, 244, 248)
+			end
+		end
+		local o = ov("ColBg")
+		if o then p.Bg = o end
+		o = ov("ColHead")
+		if o then p.Head = o end
+		o = ov("ColRow")
+		if o then p.Row = o end
+		o = ov("ColText")
+		if o then p.Text = o end
+		o = ov("ColSub")
+		if o then p.Sub = o end
+		o = ov("ColRowOn")
+		if o then
+			p.RowOn = o
+			p.OnText = luminance(o) > 0.55 and Color3.fromRGB(10, 10, 12) or Color3.fromRGB(244, 244, 248)
+		end
+		o = ov("ColFill")
+		if o then p.Fill = o end
+		o = ov("ColRim")
+		if o then
+			p.Rim1 = o
+			p.Rim2 = p.Rim2:Lerp(o, 0.5)
+		end
+		if th.AutoContrast then
+			for _, bg in {p.Bg, p.Row} do
+				p.Text = ensureContrast(p.Text, bg, 4.5)
+			end
+			for _, bg in {p.Bg, p.Row, p.Set} do
+				p.Sub = ensureContrast(p.Sub, bg, 3)
+			end
+			p.OnText = ensureContrast(p.OnText, p.RowOn, 4.5)
+			p.OnText = ensureContrast(p.OnText, p.Fill, 3)
+		end
+		p.HeadText = p.Text
+		p.HeadSub = p.Sub
+		if th.AutoContrast then
+			p.HeadText = ensureContrast(p.Text, p.Head, 4.5)
+			p.HeadSub = ensureContrast(p.Sub, p.Head, 3)
+		end
+		p.Accent = p.Fill
+		p.Tinted = tint ~= nil
+		p.TintColor = tint
+		return p
+	end
+	self.Pals = {Dark = tinted(DARK), Light = tinted(LIGHT)}
+end
+
+function Library:ContrastReport()
+	local mode = self.Theme.Mode
+	local list = {}
+	if mode ~= "亮白" then
+		table.insert(list, self.Pals.Dark)
+	end
+	if mode ~= "深黑" then
+		table.insert(list, self.Pals.Light)
+	end
+	local worst = 99
+	for _, p in list do
+		worst = math.min(worst, contrastRatio(p.Text, p.Bg), contrastRatio(p.HeadText, p.Head), contrastRatio(p.Text, p.Row), contrastRatio(p.Sub, p.Bg), contrastRatio(p.OnText, p.RowOn))
+	end
+	return worst
+end
+
+function Library:Palette(index)
+	local mode = self.Theme.Mode
+	local dark
+	if mode == "深黑" then
+		dark = true
+	elseif mode == "亮白" then
+		dark = false
+	else
+		dark = index % 2 == 1
+	end
+	return dark and self.Pals.Dark or self.Pals.Light
+end
+
+function Library:Reg(fn)
+	table.insert(self.Regs, fn)
+	fn(false)
+	return fn
+end
+
+function Library:Unreg(fn)
+	local i = table.find(self.Regs, fn)
+	if i then
+		table.remove(self.Regs, i)
+	end
+end
+
+function Library:Safe(name, fn, ...)
+	local args = table.pack(...)
+	task.spawn(function()
+		local ok, err = pcall(fn, table.unpack(args, 1, args.n))
+		if not ok then
+			warn("[ClickGui] " .. tostring(name) .. ": " .. tostring(err))
+			self:Notify("错误", tostring(name) .. "：" .. tostring(err):sub(1, 50), 3, "alert")
+		end
+	end)
+end
+
+function Library:StartDrag(input, onMove, onEnd)
+	local drag = {Input = input, OnMove = onMove, OnEnd = onEnd}
+	self.Drags[drag] = true
+	return drag
+end
+
+function Library:EndDrag(drag)
+	self.Drags[drag] = nil
+end
+
+function Library:MakeDraggable(handle, target, opts)
+	opts = opts or {}
+	handle.InputBegan:Connect(function(input)
+		if not isPointer(input) then return end
+		if opts.OnDown then
+			opts.OnDown(input)
+		end
+		local startPos = input.Position
+		local origin = target.Position
+		local moved = false
+		local finished = false
+		local holdFired = false
+		local drag
+		drag = self:StartDrag(input, function(cur)
+			local d = cur.Position - startPos
+			if d.Magnitude > 8 then
+				moved = true
+			end
+			if moved and not opts.NoMove and (not opts.CanMove or opts.CanMove()) then
+				local s = opts.GetScale and opts.GetScale() or 1
+				target.Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X / s, origin.Y.Scale, origin.Y.Offset + d.Y / s)
+			end
+		end, function()
+			finished = true
+			if opts.OnUp then
+				opts.OnUp()
+			end
+			if moved then
+				if opts.OnMoved then
+					opts.OnMoved()
+				end
+			elseif not holdFired and opts.OnTap then
+				opts.OnTap()
+			end
+		end)
+		if opts.OnHold then
+			task.delay(opts.HoldTime or 0.7, function()
+				if not finished and not moved then
+					finished = true
+					holdFired = true
+					self:EndDrag(drag)
+					if opts.OnUp then
+						opts.OnUp()
+					end
+					opts.OnHold()
+				end
+			end)
+		end
+	end)
+end
+
+function Library:SetUIScale(value)
+	value = math.clamp(math.floor(value + 0.5), 40, 200)
+	if value == self.Theme.UIScale then return end
+	self.Theme.UIScale = value
+	self:UpdateScale()
+	local c = self.Controls.UIScale
+	if c then
+		c:SetValue(value, true)
+	end
+end
+
+function Library:UpdateGrip()
+	self.Grip.Visible = self.Visible and self.Theme.ShowGrip
+end
+
+function Library:Ripple(host, input, color)
+	local th = self.Theme
+	if not th.Ripple or th.Perf then return end
+	local s = self.Scale.Scale
+	local inset = GuiService:GetGuiInset().Y
+	local x = (input.Position.X - host.AbsolutePosition.X) / s
+	local y = (input.Position.Y + inset - host.AbsolutePosition.Y) / s
+	local p = self:Palette(1)
+	local dot = create("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(x, y),
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundColor3 = color or p.Text,
+		BackgroundTransparency = 0.82,
+		BorderSizePixel = 0,
+		ZIndex = 0
+	}, host)
+	corner(dot, 999)
+	local size = math.max(host.AbsoluteSize.X, host.AbsoluteSize.Y) / s * 2.2
+	tween(dot, {Size = UDim2.fromOffset(size, size), BackgroundTransparency = 1}, 0.5)
+	task.delay(0.55, function()
+		dot:Destroy()
+	end)
+end
+
+function Library:Wave(host, x, color)
+	local th = self.Theme
+	if not th.Wave or th.Perf or not th.Animations or not self.IsReady or not self.Visible then return end
+	local s = self.Scale.Scale
+	local w = host.AbsoluteSize.X / s
+	local h = host.AbsoluteSize.Y / s
+	x = x or w / 2
+	local far = math.max(x, w - x)
+	local d = math.sqrt(far * far + (h / 2) * (h / 2)) * 2.1
+	local dot = create("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(x, h / 2),
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundColor3 = color,
+		BackgroundTransparency = 0.45,
+		BorderSizePixel = 0,
+		ZIndex = 0
+	}, host)
+	corner(dot, 999)
+	tween(dot, {Size = UDim2.fromOffset(d, d)}, 0.38)
+	task.delay(0.3, function()
+		tween(dot, {BackgroundTransparency = 1}, 0.2)
+	end)
+	task.delay(0.56, function()
+		dot:Destroy()
+	end)
+end
+
+function Library:SetGlow(cat, on)
+	if cat.GlowOn == on then return end
+	cat.GlowOn = on
+	local th = self.Theme
+	local target = on and (1 - (th.GlowStrength / 100) * 0.07) or 1
+	if on then
+		cat.Glow.Visible = true
+	end
+	for _, r in cat.GlowRings do
+		apply(r, {BackgroundTransparency = target}, true)
+	end
+	if not on then
+		task.delay(0.28, function()
+			if not cat.GlowOn then
+				cat.Glow.Visible = false
+			end
+		end)
+	end
+end
+
+function Library:UpdateGlow(pos, down)
+	local th = self.Theme
+	local show = down and th.TouchGlow and not th.Perf and self.Visible
+	local inset = GuiService:GetGuiInset().Y
+	local s = self.Scale.Scale
+	for _, cat in self.Categories do
+		if cat.Glow then
+			local on = false
+			if show then
+				local pp, ps = cat.Panel.AbsolutePosition, cat.Panel.AbsoluteSize
+				local x, y = pos.X - pp.X, pos.Y + inset - pp.Y
+				if x >= 0 and y >= 0 and x <= ps.X and y <= ps.Y then
+					cat.Glow.Position = UDim2.fromOffset(x / s, y / s)
+					on = true
+				end
+			end
+			self:SetGlow(cat, on)
+		end
+	end
+end
+
+function Library:SetRainbow(api, state)
+	self.Rainbows[api] = state and true or nil
+	self:UpdateTicker()
+end
+
+function Library:ShimmerStep(clock)
+	local sps = 0.15 + (self.Theme.ShimmerSpeed / 100) * 0.55
+	for _, m in self.Modules do
+		if m.Enabled then
+			local x = -0.4 + ((clock * sps + m.ShineOffset) % 2.2)
+			m.Shine.Position = UDim2.new(x, 0, 0.5, 0)
+		end
+	end
+end
+
+function Library:UpdateTicker()
+	local th = self.Theme
+	local need = next(self.Rainbows) ~= nil or th.HudColor == "彩虹" or ((th.Shimmer or th.AccentRainbow or th.FlowMode ~= "关闭") and not th.Perf)
+	if need and not self.Ticker then
+		local acc = 0
+		self.Ticker = RunService.Heartbeat:Connect(function(dt)
+			acc += dt
+			if acc < 1 / 30 then return end
+			acc = 0
+			local clock = os.clock()
+			self.Hue = (clock * 0.2) % 1
+			for api in self.Rainbows do
+				api:SetHSV(self.Hue, nil, nil, false, true)
+			end
+			if th.HudColor == "彩虹" then
+				self:HudColorize()
+			end
+			if not th.Perf then
+				if th.FlowMode ~= "关闭" then
+					local deg = (clock * th.FlowSpeed) % 360
+					for g in self.FlowList do
+						if g.Parent == nil then
+							self.FlowList[g] = nil
+						else
+							g.Rotation = deg
+						end
+					end
+				end
+				if th.AccentRainbow then
+					for _, m in self.Modules do
+						if m.Enabled then
+							m.Refresh(false)
+						end
+					end
+				end
+				if th.Shimmer then
+					self:ShimmerStep(clock)
+				end
+			end
+		end)
+		self.Maid:Give(self.Ticker)
+	elseif not need and self.Ticker then
+		self.Ticker:Disconnect()
+		self.Ticker = nil
+	end
+end
+
+function Library:UpdateScale()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local v = camera.ViewportSize
+	local base = math.clamp(math.min(v.X / 980, v.Y / 520), 0.55, 1.2)
+	self.Scale.Scale = base * (self.Theme.UIScale / 100)
+	self.Root.Size = UDim2.fromScale(1 / self.Scale.Scale, 1 / self.Scale.Scale)
+	if self.Hud then
+		self.Hud.Scale.Scale = base * (self.Theme.HudSize / 100)
+	end
+end
+
+function Library:BlurSize()
+	if self.Theme.Perf then
+		return 0
+	end
+	return self.Theme.Blur
+end
+
+function Library:ApplyBackground()
+	local th = self.Theme
+	local okTop, top = pcall(Color3.fromHex, th.BgTopHex)
+	local okBottom, bottom = pcall(Color3.fromHex, th.BgBottomHex)
+	self.BgGrad.Color = ColorSequence.new(okTop and top or B, okBottom and bottom or B)
+	if self.BgImage then
+		local id = tostring(th.BgImageId or "")
+		local num = tonumber(id)
+		self.BgImage.Visible = num ~= nil
+		self.BgImage.Image = num and ("rbxassetid://" .. id) or ""
+		self.BgImage.ImageTransparency = 1 - math.clamp(th.BgImageOpacity, 0, 100) / 100
+	end
+end
+
+function Library:LayoutToasts()
+	local pos = self.Theme.ToastPos
+	local frame = self.Toasts
+	local layout = self.ToastLayout
+	if pos == "右下" then
+		frame.AnchorPoint = Vector2.new(1, 1)
+		frame.Position = UDim2.new(1, -10, 1, -10)
+		layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	elseif pos == "左下" then
+		frame.AnchorPoint = Vector2.new(0, 1)
+		frame.Position = UDim2.new(0, 10, 1, -10)
+		layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	elseif pos == "右上" then
+		frame.AnchorPoint = Vector2.new(1, 0)
+		frame.Position = UDim2.new(1, -10, 0, 56)
+		layout.VerticalAlignment = Enum.VerticalAlignment.Top
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	else
+		frame.AnchorPoint = Vector2.new(0.5, 0)
+		frame.Position = UDim2.new(0.5, 0, 0, 56)
+		layout.VerticalAlignment = Enum.VerticalAlignment.Top
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	end
+end
+
+local FontSets = {
+	["默认"] = {Enum.Font.SourceSans, Enum.Font.SourceSansBold},
+	["Gotham"] = {Enum.Font.Gotham, Enum.Font.GothamBold},
+	["Arial"] = {Enum.Font.Arial, Enum.Font.ArialBold}
+}
+
+function Library:ApplyFont()
+	local name = self.Theme.FontName
+	if self.FontApplied == name then return end
+	local set = FontSets[name] or FontSets["默认"]
+	local oldRegular, oldBold = T.Font, T.FontBold
+	T.Font, T.FontBold = set[1], set[2]
+	self.FontApplied = name
+	if oldRegular == T.Font then return end
+	for _, d in self.Gui:GetDescendants() do
+		if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+			local ok, f = pcall(function()
+				return d.Font
+			end)
+			if ok then
+				if f == oldBold then
+					d.Font = T.FontBold
+				elseif f == oldRegular then
+					d.Font = T.Font
+				end
+			end
+		end
+	end
+end
+
+function Library:ApplyTheme()
+	animEnabled = self.Theme.Animations
+	animSpeed = math.max(self.Theme.AnimSpeed, 20) / 100
+	self:BuildPals()
+	self:UpdateFps()
+	self:ApplyFont()
+	self:TrackHistory()
+	self:UpdateScale()
+	self:ApplyBackground()
+	if self.ScrollLayout then
+		self.ScrollLayout.Padding = UDim.new(0, self.Theme.PanelGap)
+		self.Scroller.ScrollBarThickness = self.Theme.BarThick
+		local inset = self.Theme.SafeInset
+		self.ScrollPad.PaddingLeft = UDim.new(0, 16 + inset)
+		self.ScrollPad.PaddingRight = UDim.new(0, 16 + inset)
+		local align = self.Theme.PanelAlign
+		self.ScrollLayout.VerticalAlignment = align == "底部" and Enum.VerticalAlignment.Bottom or (align == "居中" and Enum.VerticalAlignment.Center or Enum.VerticalAlignment.Top)
+	end
+	if self.Visible then
+		self.Root.BackgroundTransparency = 1 - self.Theme.Dim / 100
+		self.Blur.Size = self:BlurSize()
+	end
+	for _, fn in self.Regs do
+		fn(false)
+	end
+	self:UpdateTicker()
+	self:UpdateCape()
+end
+
+function Library:ApplyPreset(name)
+	local preset = Presets[name]
+	if not preset then return end
+	for _, k in VisualKeys do
+		local v = preset[k]
+		if v == nil then
+			v = DefaultTheme[k]
+		end
+		self.Theme[k] = v
+	end
+	self.Theme.Preset = name
+	self:SyncControls()
+	self:ApplyTheme()
+	self:QueueSave()
+end
+
+function Library:TrackHistory()
+	if self.Restoring or self.Loading or not self.HistLast then
+		self.HistLast = table.clone(self.Theme)
+		return
+	end
+	if self.Previewing then return end
+	local diff = false
+	for k, v in self.Theme do
+		if self.HistLast[k] ~= v then
+			diff = true
+			break
+		end
+	end
+	if not diff then return end
+	local now = os.clock()
+	if now - (self.HistTime or -10) > 0.8 then
+		table.insert(self.Undo, self.HistLast)
+		if #self.Undo > 30 then
+			table.remove(self.Undo, 1)
+		end
+	end
+	self.HistTime = now
+	self.Redo = {}
+	self.HistLast = table.clone(self.Theme)
+end
+
+function Library:RestoreTheme(snap)
+	self.Restoring = true
+	for k, v in snap do
+		self.Theme[k] = v
+	end
+	self:SyncControls()
+	self:ApplyTheme()
+	self.Restoring = false
+	self.HistLast = table.clone(self.Theme)
+	self.HistTime = -10
+	self:QueueSave()
+end
+
+function Library:UndoTheme()
+	self:TrackHistory()
+	local snap = table.remove(self.Undo)
+	if not snap then
+		self:Notify("历史", "没有可撤销的外观改动", 1.4, "warning")
+		return false
+	end
+	table.insert(self.Redo, table.clone(self.Theme))
+	self:RestoreTheme(snap)
+	return true
+end
+
+function Library:RedoTheme()
+	self:TrackHistory()
+	local snap = table.remove(self.Redo)
+	if not snap then
+		self:Notify("历史", "没有可重做的外观改动", 1.4, "warning")
+		return false
+	end
+	table.insert(self.Undo, table.clone(self.Theme))
+	self:RestoreTheme(snap)
+	return true
+end
+
+function Library:StartPreview()
+	if self.Previewing then
+		self:Notify("预览", "已经在预览中", 1.4, "warning")
+		return
+	end
+	self:TrackHistory()
+	self.PreviewBase = table.clone(self.Theme)
+	self.Previewing = true
+	self:Notify("预览", "预览中：改动不会自动保存", 2, "info")
+end
+
+function Library:KeepPreview()
+	if not self.Previewing then
+		self:Notify("预览", "当前不在预览中", 1.4, "warning")
+		return
+	end
+	self.Previewing = false
+	table.insert(self.Undo, self.PreviewBase)
+	self.PreviewBase = nil
+	self.Redo = {}
+	self.HistLast = table.clone(self.Theme)
+	self.HistTime = -10
+	self:QueueSave()
+	self:Notify("预览", "已保留", 1.4, "info")
+end
+
+function Library:DiscardPreview()
+	if not self.Previewing then
+		self:Notify("预览", "当前不在预览中", 1.4, "warning")
+		return
+	end
+	local base = self.PreviewBase
+	self.Previewing = false
+	self.PreviewBase = nil
+	self:RestoreTheme(base)
+	self:Notify("预览", "已放弃，恢复预览前外观", 1.6, "info")
+end
+
+function Library:SpectrumColor(obj, module)
+	local th = self.Theme
+	local mode = th.EnabledColor
+	local root = self.Root
+	local t = 0
+	if root and root.AbsoluteSize.Y > 0 then
+		t = math.clamp((obj.AbsolutePosition.Y - root.AbsolutePosition.Y) / root.AbsoluteSize.Y, 0, 1)
+	end
+	local function hex(h, default)
+		local ok, c = pcall(Color3.fromHex, h)
+		return ok and c or default
+	end
+	if mode == "日落" then
+		return Color3.fromRGB(255, 96, 96):Lerp(Color3.fromRGB(255, 196, 70), t)
+	elseif mode == "双色渐变" then
+		return hex(th.EnabledHexA, W):Lerp(hex(th.EnabledHexB, W), t)
+	elseif mode == "顺序渐变" and module then
+		local cat = self:FindCategory(module.Host and module.Host.Name or module.Category)
+		local count = cat and #cat.Modules or 1
+		local idx = cat and table.find(cat.Modules, module) or 1
+		return hex(th.EnabledHexA, W):Lerp(hex(th.EnabledHexB, W), (idx - 1) / math.max(count - 1, 1))
+	elseif mode == "分类取色" and module then
+		local cat = self:FindCategory(module.Host and module.Host.Name or module.Category)
+		if cat and cat.ColorHex then
+			local ok, c = pcall(Color3.fromHex, cat.ColorHex)
+			if ok then
+				return c
+			end
+		end
+		local n = math.max(#self.Categories, 1)
+		return Color3.fromHSV(((cat and cat.Index or 1) - 1) / n % 1, 0.62, 0.92)
+	end
+	return Color3.fromHSV(0.3 + t * 0.48, 0.72, 0.88)
+end
+
+function Library:ExportTheme()
+	local data = {Preset = self.Theme.Preset}
+	for _, k in VisualKeys do
+		data[k] = self.Theme[k]
+	end
+	return HttpService:JSONEncode(data)
+end
+
+function Library:ImportTheme(code)
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(code)
+	end)
+	if not ok or type(data) ~= "table" then
+		return false
+	end
+	local count = 0
+	for _, k in VisualKeys do
+		local v = data[k]
+		if v ~= nil and type(v) == type(DefaultTheme[k]) then
+			self.Theme[k] = v
+			count += 1
+		end
+	end
+	if count == 0 then
+		return false
+	end
+	if type(data.Preset) == "string" then
+		self.Theme.Preset = data.Preset
+	end
+	self:SyncControls()
+	self:ApplyTheme()
+	self:QueueSave()
+	return true
+end
+
+function Library:ThemePath(name)
+	return self.Folder .. "/theme_" .. name .. ".json"
+end
+
+function Library:CleanName(name)
+	name = tostring(name or ""):gsub('[/\\:*?"<>|]', ""):gsub("^%s+", ""):gsub("%s+$", "")
+	return name
+end
+
+function Library:ListThemes()
+	local list = {}
+	if self.CanFile and listfiles then
+		local ok, files = pcall(listfiles, self.Folder)
+		if ok and type(files) == "table" then
+			for _, path in files do
+				local base = tostring(path):match("([^/\\]+)%.json$")
+				if base and base:sub(1, 6) == "theme_" and #base > 6 then
+					local name = base:sub(7)
+					if not table.find(list, name) then
+						table.insert(list, name)
+					end
+				end
+			end
+		end
+	end
+	table.sort(list)
+	return list
+end
+
+function Library:SaveTheme(name)
+	name = self:CleanName(name)
+	if name == "" then
+		self:Notify("我的主题", "请先输入主题名称", 2, "warning")
+		return false
+	end
+	if not self.CanFile then
+		self:Notify("我的主题", "当前环境不支持文件操作", 2.5, "warning")
+		return false
+	end
+	local ok = pcall(function()
+		if not isfolder(self.Folder) then
+			makefolder(self.Folder)
+		end
+		writefile(self:ThemePath(name), self:ExportTheme())
+	end)
+	if ok then
+		self:Notify("我的主题", "已保存：" .. name, 1.8, "info")
+	else
+		self:Notify("我的主题", "保存失败", 2.5, "alert")
+	end
+	return ok, name
+end
+
+function Library:LoadTheme(name)
+	if not self.CanFile or not name then return false end
+	local ok, content = pcall(function()
+		local path = self:ThemePath(name)
+		if isfile(path) then
+			return readfile(path)
+		end
+	end)
+	if ok and content and self:ImportTheme(content) then
+		self:Notify("我的主题", "已应用：" .. name, 1.8, "info")
+		return true
+	end
+	self:Notify("我的主题", "找不到或无法读取：" .. tostring(name), 2.2, "warning")
+	return false
+end
+
+function Library:DeleteTheme(name)
+	if not self.CanFile or not delfile or not name then return false end
+	local ok = pcall(function()
+		local path = self:ThemePath(name)
+		if isfile(path) then
+			delfile(path)
+		end
+	end)
+	if ok then
+		self:Notify("我的主题", "已删除：" .. name, 1.6, "info")
+	end
+	return ok
+end
+
+function Library:ResetAll()
+	for k, v in DefaultTheme do
+		self.Theme[k] = v
+	end
+	self:ApplyCustomCats({Names = {}, Assign = {}})
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			cat.ColorHex = nil
+			cat.WidthOverride = nil
+			cat.IconId = nil
+			cat.Hidden = false
+			cat.Order = cat.Index
+		end
+	end
+	for key in table.clone(self.Quicks) do
+		local module = self.ModulesByKey[key]
+		if module then
+			self:RemoveQuick(module, true)
+		end
+	end
+	self:SetEditMode(false)
+	if self.EditToggle then
+		self.EditToggle:SetValue(false, true)
+	end
+	for _, cat in self.Categories do
+		cat.FreePos = nil
+	end
+	for _, m in self.Modules do
+		m.Display = nil
+		m.IconId = nil
+		m.ColorHex = nil
+		m.ColorC = nil
+		m.Hidden = false
+		m.Pinned = false
+		m:ApplyCustom()
+	end
+	self:ApplyFreeLayout()
+	self:RefreshFilter()
+	self:SyncModControls()
+	self:SyncControls()
+	self:ApplyCatLayout()
+	self:ApplyTheme()
+	self:SyncCatControls()
+	self:RefreshHud()
+	self:QueueSave()
+end
+
+function Library:CapeSig()
+	local th = self.Theme
+	return table.concat({tostring(th.Cape), th.CapeW, th.CapeLen, th.CapeHex, tostring(th.CapeId)}, "|")
+end
+
+function Library:DestroyCape()
+	local c = self.CapeData
+	self.CapeData = nil
+	if c then
+		if c.Conn then
+			c.Conn:Disconnect()
+		end
+		if c.Part then
+			c.Part:Destroy()
+		end
+	end
+end
+
+function Library:BuildCape()
+	self:DestroyCape()
+	local th = self.Theme
+	if not th.Cape then return end
+	local lp = Players.LocalPlayer
+	local char = lp and lp.Character
+	if not char then return end
+	local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not torso or not root then return end
+	local len = th.CapeLen
+	local id = tostring(th.CapeId or "")
+	local part = create("Part", {
+		Name = randomName(),
+		Size = Vector3.new(th.CapeW, len, 0.12),
+		Color = hexColor(th.CapeHex, Color3.fromRGB(20, 20, 26)),
+		Material = Enum.Material.Fabric,
+		CanCollide = false,
+		CanTouch = false,
+		CanQuery = false,
+		Massless = true
+	})
+	create("Decal", {
+		Face = Enum.NormalId.Back,
+		Texture = id:match("^%d+$") and ("rbxassetid://" .. id) or Assets.Vape
+	}, part)
+	local base = CFrame.new(0, torso.Size.Y / 2 - 0.1, torso.Size.Z / 2 + 0.06)
+	local motor = create("Motor6D", {
+		Name = "CapeMotor",
+		Part0 = torso,
+		Part1 = part,
+		C0 = base,
+		C1 = CFrame.new(0, len / 2, 0)
+	}, part)
+	part.Parent = char
+	local data = {Part = part, Sig = self:CapeSig(), Smooth = 6, Phase = 0}
+	data.Conn = RunService.Heartbeat:Connect(function(dt)
+		if not part.Parent or not root.Parent then return end
+		local v = root.AssemblyLinearVelocity
+		local look = root.CFrame.LookVector
+		local right = root.CFrame.RightVector
+		local forward = v.X * look.X + v.Z * look.Z
+		local side = v.X * right.X + v.Z * right.Z
+		local k = self.Theme.CapeSwing / 100
+		data.Phase += dt
+		local target = 6 + math.clamp(forward, 0, 40) * 1.6 * k + math.clamp(-v.Y, 0, 60) * 0.25 * k
+		data.Smooth += (target - data.Smooth) * math.min(dt * 8, 1)
+		local sway = math.sin(data.Phase * 2.4) * (2 + math.abs(forward) * 0.15) * k + math.clamp(side, -30, 30) * 0.5 * k
+		motor.C0 = base * CFrame.Angles(-math.rad(math.clamp(data.Smooth, 0, 85)), 0, math.rad(sway))
+	end)
+	self.CapeData = data
+end
+
+function Library:UpdateCape()
+	local th = self.Theme
+	local c = self.CapeData
+	if not th.Cape then
+		if c then
+			self:DestroyCape()
+		end
+		return
+	end
+	if not c or c.Sig ~= self:CapeSig() or not c.Part.Parent then
+		self:BuildCape()
+	end
+end
+
+function Library:SetModCustom(key, field, value)
+	local m = self.ModulesByKey[key]
+	if not m then return false end
+	if field == "Name" then
+		value = tostring(value or "")
+		m.Display = value ~= "" and value or nil
+	elseif field == "Color" then
+		value = tostring(value or ""):gsub("#", ""):gsub("%s", "")
+		if value == "" then
+			m.ColorHex = nil
+			m.ColorC = nil
+		else
+			local ok, c = pcall(Color3.fromHex, value)
+			if not ok then
+				return false
+			end
+			m.ColorHex = value
+			m.ColorC = c
+		end
+	elseif field == "Icon" then
+		local id = tostring(value or ""):gsub("%s", "")
+		if id == "" then
+			m.IconId = nil
+		elseif id:match("^%d+$") then
+			m.IconId = id
+		else
+			return false
+		end
+	elseif field == "Hidden" then
+		m.Hidden = value == true
+	elseif field == "Pin" then
+		m.Pinned = value == true
+	else
+		return false
+	end
+	m:ApplyCustom()
+	local quick = self.Quicks[key]
+	if quick then
+		quick.Refresh(false)
+	end
+	self:RefreshFilter()
+	self:RefreshHud()
+	self:QueueSave()
+	return true
+end
+
+function Library:ResetModCustom(key)
+	local m = self.ModulesByKey[key]
+	if not m then return end
+	m.Display = nil
+	m.IconId = nil
+	m.ColorHex = nil
+	m.ColorC = nil
+	m.Hidden = false
+	m.Pinned = false
+	m:ApplyCustom()
+	local quick = self.Quicks[key]
+	if quick then
+		quick.Refresh(false)
+	end
+	self:RefreshFilter()
+	self:RefreshHud()
+end
+
+function Library:RefreshModList()
+	if not self.ModDrop then return end
+	local names = {}
+	for _, m in self.Modules do
+		table.insert(names, m.Key)
+	end
+	if #names == 0 then
+		names = {"（无）"}
+	end
+	self.ModDrop:SetList(names)
+	if not self.ModSel or not table.find(names, self.ModSel) then
+		self.ModSel = names[1]
+	end
+	self.ModDrop:SetValue(self.ModSel, true)
+	self:SyncModControls()
+end
+
+function Library:SyncModControls()
+	local c = self.ModControls
+	local m = self.ModSel and self.ModulesByKey[self.ModSel]
+	if not c or not m then return end
+	c.Name:SetValue(m.Display or "", true)
+	c.Color:SetValue(m.ColorHex or "", true)
+	c.Icon:SetValue(m.IconId or "", true)
+	c.Pin:SetValue(m.Pinned == true, true)
+	c.Hidden:SetValue(m.Hidden == true, true)
+end
+
+function Library:ShowAllModules()
+	for _, m in self.Modules do
+		if m.Hidden then
+			m.Hidden = false
+		end
+	end
+	self:RefreshFilter()
+	self:SyncModControls()
+	self:QueueSave()
+end
+
+function Library:RaiseCat(cat)
+	self.TopZ = (self.TopZ or 10) + 1
+	cat.Holder.ZIndex = self.TopZ
+end
+
+function Library:ClampCat(cat)
+	local s = self.Scale.Scale
+	local holder = cat.Holder
+	local pos = holder.Position
+	local maxX = self.Root.AbsoluteSize.X / s - 60
+	local maxY = self.Root.AbsoluteSize.Y / s - 44
+	local x = math.clamp(pos.X.Offset, 60 - holder.AbsoluteSize.X / s, maxX)
+	local y = math.clamp(pos.Y.Offset, 48, math.max(maxY, 48))
+	holder.Position = UDim2.fromOffset(x, y)
+	cat.FreePos = {X = x, Y = y}
+end
+
+function Library:ApplyFreeLayout()
+	local want = self.Theme.FreeLayout == true
+	for _, cat in self.Categories do
+		if not cat.Floating and (cat.Free == true) ~= want then
+			cat:SetFree(want)
+		end
+	end
+	if self.FreeToggle then
+		self.FreeToggle:SetValue(want, true)
+	end
+end
+
+function Library:SetFreeLayout(state)
+	self.Theme.FreeLayout = state == true
+	self:ApplyFreeLayout()
+	self:ApplyCatLayout()
+	self:QueueSave()
+end
+
+function Library:ResetFreePositions()
+	local list = self:ApplyCatLayout()
+	local x = 16
+	for _, cat in list do
+		cat.FreePos = {X = x, Y = 64}
+		x += (cat.WidthOverride or self.Theme.PanelW) + self.Theme.PanelGap
+		if cat.Free then
+			cat.Holder.Position = UDim2.fromOffset(cat.FreePos.X, cat.FreePos.Y)
+		end
+	end
+	self:QueueSave()
+end
+
+function Library:ExportAll()
+	return HttpService:JSONEncode(self:Serialize())
+end
+
+function Library:ImportAll(code)
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(code)
+	end)
+	if not ok or type(data) ~= "table" or type(data.Theme) ~= "table" then
+		return false
+	end
+	self:Deserialize(data)
+	self:QueueSave()
+	return true
+end
+
+function Library:CreateCustomCategory(name, quiet)
+	name = tostring(name or "")
+	name = name:gsub("^%s+", "")
+	name = name:gsub("%s+$", "")
+	if name == "" or utf8.len(name) == nil or utf8.len(name) > 10 then
+		return false, "名称为空或超过 10 个字"
+	end
+	for _, c in self.Categories do
+		if c.Name == name then
+			return false, "已经有同名分类"
+		end
+	end
+	local cat = self:CreateCategory({Name = name})
+	cat.Custom = true
+	self:ApplyCatLayout()
+	self:ApplyFreeLayout()
+	if not quiet then
+		self:QueueSave()
+	end
+	return cat
+end
+
+function Library:MoveModule(key, targetName, quiet)
+	local m = self.ModulesByKey[key]
+	if not m then return false end
+	local target = (targetName == nil or targetName == "（原位置）") and self:FindCategory(m.Category) or self:FindCategory(targetName)
+	if not target then return false end
+	local from = m.Host or self:FindCategory(m.Category)
+	if from == target then return true end
+	if from then
+		local i = table.find(from.Modules, m)
+		if i then
+			table.remove(from.Modules, i)
+		end
+	end
+	table.insert(target.Modules, m)
+	m.Container.Parent = target.Body
+	m.Host = target.Name ~= m.Category and target or nil
+	m.Index = #target.Modules
+	m:ApplyCustom()
+	if not quiet then
+		self:ApplyTheme()
+		self:RefreshFilter()
+		self:QueueSave()
+	end
+	return true
+end
+
+function Library:DeleteCustomCategory(name, quiet)
+	local cat = self:FindCategory(name)
+	if not cat or not cat.Custom then return false end
+	for _, m in table.clone(cat.Modules) do
+		self:MoveModule(m.Key, nil, true)
+	end
+	local i = table.find(self.Categories, cat)
+	if i then
+		table.remove(self.Categories, i)
+	end
+	cat.Holder:Destroy()
+	self:ApplyCatLayout()
+	self:RefreshCatList()
+	if not quiet then
+		self:ApplyTheme()
+		self:RefreshFilter()
+		self:QueueSave()
+	end
+	return true
+end
+
+function Library:RenameCustomCategory(old, new)
+	local cat = self:FindCategory(old)
+	if not cat or not cat.Custom then return false, "只能重命名自定义分类" end
+	new = tostring(new or "")
+	new = new:gsub("^%s+", "")
+	new = new:gsub("%s+$", "")
+	if new == "" or utf8.len(new) == nil or utf8.len(new) > 10 then
+		return false, "名称为空或超过 10 个字"
+	end
+	if new ~= old and self:FindCategory(new) then
+		return false, "已经有同名分类"
+	end
+	cat.Name = new
+	cat.Holder.Name = new
+	cat.TitleLabel.Text = new
+	if self.CatSel == old then
+		self.CatSel = new
+	end
+	self:RefreshCatList()
+	self:QueueSave()
+	return true
+end
+
+function Library:ApplyCustomCats(info)
+	local wanted = {}
+	if type(info.Names) == "table" then
+		for _, n in info.Names do
+			if type(n) == "string" then
+				wanted[n] = true
+			end
+		end
+	end
+	for _, cat in table.clone(self.Categories) do
+		if cat.Custom and not wanted[cat.Name] then
+			self:DeleteCustomCategory(cat.Name, true)
+		end
+	end
+	if type(info.Names) == "table" then
+		for _, n in info.Names do
+			if type(n) == "string" and not self:FindCategory(n) then
+				self:CreateCustomCategory(n, true)
+			end
+		end
+	end
+	local assigned = {}
+	if type(info.Assign) == "table" then
+		for _, a in info.Assign do
+			if type(a) == "table" and type(a.Key) == "string" and type(a.Cat) == "string" then
+				assigned[a.Key] = true
+			end
+		end
+	end
+	for _, m in table.clone(self.Modules) do
+		if m.Host and not assigned[m.Key] then
+			self:MoveModule(m.Key, nil, true)
+		end
+	end
+	if type(info.Assign) == "table" then
+		for _, a in info.Assign do
+			if type(a) == "table" and type(a.Key) == "string" and type(a.Cat) == "string" then
+				self:MoveModule(a.Key, a.Cat, true)
+			end
+		end
+	end
+end
+
+function Library:RefreshMoveList()
+	if not self.MoveDrop then return end
+	local list = {"（原位置）"}
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			table.insert(list, cat.Name)
+		end
+	end
+	self.MoveDrop:SetList(list)
+	if not self.MoveSel or not table.find(list, self.MoveSel) then
+		self.MoveSel = list[1]
+	end
+	self.MoveDrop:SetValue(self.MoveSel, true)
+end
+
+function Library:FindCategory(name)
+	for _, cat in self.Categories do
+		if cat.Name == name and not cat.Floating then
+			return cat
+		end
+	end
+end
+
+function Library:ApplyCatLayout()
+	local list = {}
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			table.insert(list, cat)
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.Order == b.Order then
+			return a.Index < b.Index
+		end
+		return a.Order < b.Order
+	end)
+	for i, cat in list do
+		cat.Order = i
+		cat:ApplyStyle()
+	end
+	return list
+end
+
+function Library:SetCatStyle(name, key, value)
+	local cat = self:FindCategory(name)
+	if not cat then return false end
+	if key == "Color" then
+		value = tostring(value or ""):gsub("#", ""):gsub("%s", "")
+		if value == "" then
+			cat.ColorHex = nil
+		else
+			local ok = pcall(Color3.fromHex, value)
+			if not ok then
+				return false
+			end
+			cat.ColorHex = value
+		end
+		self:ApplyTheme()
+	elseif key == "Icon" then
+		value = tostring(value or ""):gsub("%s", "")
+		if value == "" then
+			cat.IconId = nil
+		elseif value:match("^%d+$") then
+			cat.IconId = value
+		else
+			return false
+		end
+		cat:ApplyStyle()
+	elseif key == "Width" then
+		cat.WidthOverride = type(value) == "number" and math.clamp(value, 120, 320) or nil
+		cat:ApplyStyle()
+	elseif key == "Hidden" then
+		cat.Hidden = value == true
+		cat:ApplyStyle()
+	end
+	self:QueueSave()
+	return true
+end
+
+function Library:MoveCat(name, dir)
+	local list = self:ApplyCatLayout()
+	for i, cat in list do
+		if cat.Name == name then
+			local other = list[i + dir]
+			if other then
+				cat.Order, other.Order = other.Order, cat.Order
+				self:ApplyCatLayout()
+				self:QueueSave()
+				return true
+			end
+			return false
+		end
+	end
+	return false
+end
+
+function Library:ShowAllCategories()
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			cat.Hidden = false
+		end
+	end
+	self:ApplyCatLayout()
+	self:SyncCatControls()
+	self:QueueSave()
+end
+
+function Library:SetEditMode(state)
+	self.EditMode = state
+	for _, cat in self.Categories do
+		if cat.EditBar then
+			cat.EditBar.Visible = state and not cat.Floating
+		end
+	end
+end
+
+function Library:RefreshCatList()
+	self:RefreshMoveList()
+	if not self.CatDrop then return end
+	local names = {}
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			table.insert(names, cat.Name)
+		end
+	end
+	if #names == 0 then
+		names = {"（无）"}
+	end
+	self.CatDrop:SetList(names)
+	if not self.CatSel or not table.find(names, self.CatSel) then
+		self.CatSel = names[1]
+	end
+	self.CatDrop:SetValue(self.CatSel, true)
+	self:SyncCatControls()
+end
+
+function Library:SyncCatControls()
+	local c = self.CatControls
+	if not c then return end
+	local cat = self.CatSel and self:FindCategory(self.CatSel)
+	if not cat then return end
+	c.Color:SetValue(cat.ColorHex or "", true)
+	c.Icon:SetValue(cat.IconId or "", true)
+	c.Width:SetValue(cat.WidthOverride or self.Theme.PanelW, true)
+	c.Hidden:SetValue(cat.Hidden == true, true)
+end
+
+function Library:QueueTheme()
+	if self.ThemePending then return end
+	self.ThemePending = true
+	task.delay(0.06, function()
+		self.ThemePending = false
+		if not self.Destroyed then
+			self:ApplyTheme()
+		end
+	end)
+end
+
+function Library:QueueSave()
+	if not self.IsReady or self.Loading or self.Previewing or not self.Meta.AutoSave then return end
+	self.SaveToken += 1
+	local token = self.SaveToken
+	task.delay(1.2, function()
+		if token == self.SaveToken and not self.Destroyed then
+			self:SaveConfig(self.Meta.Config, true)
+		end
+	end)
+end
+
+function Library:Serialize()
+	local data = {Version = 5, Theme = {}, Modules = {}, Categories = {}, Quick = {}}
+	for k, v in self.Theme do
+		data.Theme[k] = v
+	end
+	for key, module in self.ModulesByKey do
+		local entry = {Enabled = module.Enabled, Options = {}, Custom = {Name = module.Display or "", Icon = module.IconId or "", Color = module.ColorHex or "", Hidden = module.Hidden == true, Pin = module.Pinned == true}}
+		for name, opt in module.Options do
+			if opt.Save then
+				entry.Options[name] = opt:Save()
+			end
+		end
+		data.Modules[key] = entry
+	end
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			data.Categories[cat.Name] = {Collapsed = cat.Collapsed, Color = cat.ColorHex or "", Width = cat.WidthOverride or 0, Hidden = cat.Hidden == true, Order = cat.Order, Icon = cat.IconId or "", X = cat.FreePos and cat.FreePos.X, Y = cat.FreePos and cat.FreePos.Y}
+		end
+	end
+	for key, q in self.Quicks do
+		data.Quick[key] = {X = q.X, Y = q.Y}
+	end
+	local names, assigns = {}, {}
+	for _, cat in self.Categories do
+		if not cat.Floating then
+			if cat.Custom then
+				table.insert(names, cat.Name)
+			end
+			for _, m in cat.Modules do
+				if m.Host then
+					table.insert(assigns, {Key = m.Key, Cat = cat.Name})
+				end
+			end
+		end
+	end
+	data.CustomCats = {Names = names, Assign = assigns}
+	return data
+end
+
+function Library:SyncControls()
+	local th = self.Theme
+	for key, api in self.Controls do
+		if api.Type == "Color" then
+			local ok, c = pcall(Color3.fromHex, th[api.ThemeKey])
+			if ok then
+				local h, sat, val = c:ToHSV()
+				api:SetHSV(h, sat, val, true, true)
+			end
+		elseif key == "Transparency" then
+			api:SetValue(math.floor(th.Transparency * 100 + 0.5), true)
+		else
+			api:SetValue(th[key], true)
+		end
+	end
+end
+
+function Library:Deserialize(data)
+	self.Loading = true
+	if type(data.CustomCats) == "table" then
+		self:ApplyCustomCats(data.CustomCats)
+	end
+	if type(data.Theme) == "table" then
+		for k, v in data.Theme do
+			if DefaultTheme[k] ~= nil and type(v) == type(DefaultTheme[k]) then
+				self.Theme[k] = v
+			end
+		end
+	end
+	self:SyncControls()
+	self:ApplyTheme()
+	if type(data.Modules) == "table" then
+		for key, entry in data.Modules do
+			local module = self.ModulesByKey[key]
+			if module and type(entry) == "table" then
+				if type(entry.Custom) == "table" then
+					local cu = entry.Custom
+					module.Display = type(cu.Name) == "string" and cu.Name ~= "" and cu.Name or nil
+					module.ColorHex = nil
+					module.ColorC = nil
+					if type(cu.Color) == "string" and cu.Color ~= "" then
+						local okc, cc = pcall(Color3.fromHex, cu.Color)
+						if okc then
+							module.ColorHex = cu.Color
+							module.ColorC = cc
+						end
+					end
+					module.IconId = type(cu.Icon) == "string" and cu.Icon:match("^%d+$") or nil
+					module.Hidden = cu.Hidden == true
+					module.Pinned = cu.Pin == true
+					module:ApplyCustom()
+				end
+				if type(entry.Options) == "table" then
+					for name, value in entry.Options do
+						local opt = module.Options[name]
+						if opt and opt.Load then
+							pcall(opt.Load, opt, value)
+						end
+					end
+				end
+				local state = entry.Enabled == true
+				if module.Enabled ~= state then
+					module:Toggle(state, true)
+				end
+			end
+		end
+	end
+	if type(data.Categories) == "table" then
+		for _, cat in self.Categories do
+			local saved = data.Categories[cat.Name]
+			if saved and type(saved.Collapsed) == "boolean" then
+				cat:SetCollapsed(saved.Collapsed)
+			end
+			if saved and not cat.Floating then
+				local hex = type(saved.Color) == "string" and saved.Color or ""
+				local okc = hex ~= "" and pcall(Color3.fromHex, hex)
+				cat.ColorHex = okc and hex or nil
+				cat.WidthOverride = type(saved.Width) == "number" and saved.Width >= 120 and saved.Width or nil
+				cat.Hidden = saved.Hidden == true
+				cat.FreePos = (type(saved.X) == "number" and type(saved.Y) == "number") and {X = saved.X, Y = saved.Y} or nil
+				cat.IconId = type(saved.Icon) == "string" and saved.Icon:match("^%d+$") or nil
+				if type(saved.Order) == "number" then
+					cat.Order = saved.Order
+				end
+			end
+		end
+		self:ApplyCatLayout()
+		self:ApplyFreeLayout()
+		self:ApplyTheme()
+		self:SyncCatControls()
+	end
+	if type(data.Quick) == "table" then
+		for key in table.clone(self.Quicks) do
+			local module = self.ModulesByKey[key]
+			if module then
+				self:RemoveQuick(module, true)
+			end
+		end
+		for key, q in data.Quick do
+			local module = self.ModulesByKey[key]
+			if module and type(q) == "table" and type(q.X) == "number" and type(q.Y) == "number" then
+				self:CreateQuick(module, q.X, q.Y)
+			end
+		end
+	end
+	self:RefreshFilter()
+	self:RefreshHud()
+	self.Loading = false
+end
+
+function Library:ListConfigs()
+	local list = {}
+	if self.CanFile and listfiles then
+		local ok, files = pcall(listfiles, self.Folder)
+		if ok and type(files) == "table" then
+			for _, path in files do
+				local name = tostring(path):match("([^/\\]+)%.json$")
+				if name and name ~= "_meta" and name:sub(1, 6) ~= "theme_" and name:sub(1, 4) ~= "bak_" and not table.find(list, name) then
+					table.insert(list, name)
+				end
+			end
+		end
+	end
+	if not table.find(list, "default") then
+		table.insert(list, "default")
+	end
+	if self.Meta.Config and not table.find(list, self.Meta.Config) then
+		table.insert(list, self.Meta.Config)
+	end
+	table.sort(list)
+	return list
+end
+
+function Library:SaveMeta()
+	if not self.CanFile then return end
+	pcall(function()
+		if not isfolder(self.Folder) then
+			makefolder(self.Folder)
+		end
+		writefile(self.Folder .. "/_meta.json", HttpService:JSONEncode(self.Meta))
+	end)
+end
+
+function Library:LoadMeta()
+	if not self.CanFile then return end
+	pcall(function()
+		local path = self.Folder .. "/_meta.json"
+		if isfile(path) then
+			local data = HttpService:JSONDecode(readfile(path))
+			if type(data) == "table" then
+				if type(data.Config) == "string" then
+					self.Meta.Config = sanitize(data.Config)
+				end
+				if type(data.AutoSave) == "boolean" then
+					self.Meta.AutoSave = data.AutoSave
+				end
+				if type(data.AutoLoad) == "boolean" then
+					self.Meta.AutoLoad = data.AutoLoad
+				end
+				for _, k in {"AutoBind", "Onboarded", "TimeSwitch"} do
+					if type(data[k]) == "boolean" then
+						self.Meta[k] = data[k]
+					end
+				end
+				if type(data.Binds) == "table" then
+					self.Meta.Binds = {}
+					for k, v in data.Binds do
+						if type(v) == "string" then
+							self.Meta.Binds[tostring(k)] = v
+						end
+					end
+				end
+				for _, k in {"DayTheme", "NightTheme"} do
+					if type(data[k]) == "string" then
+						self.Meta[k] = data[k]
+					end
+				end
+				for _, k in {"NightFrom", "NightTo"} do
+					if type(data[k]) == "number" then
+						self.Meta[k] = math.clamp(math.floor(data[k]), 0, 23)
+					end
+				end
+			end
+		end
+	end)
+end
+
+function Library:BackupPath(name, index)
+	return self.Folder .. "/bak_" .. sanitize(name) .. "_" .. index .. ".json"
+end
+
+function Library:ListBackups(name)
+	local list = {}
+	if not self.CanFile then
+		return list
+	end
+	for i = 1, 3 do
+		local ok, exists = pcall(isfile, self:BackupPath(name, i))
+		if ok and exists then
+			table.insert(list, i)
+		end
+	end
+	return list
+end
+
+function Library:RestoreBackup(name, index)
+	if not self.CanFile then
+		return false
+	end
+	local path = self:BackupPath(name, index)
+	local okExists, exists = pcall(isfile, path)
+	if not okExists or not exists then
+		self:Notify("配置", "没有这份备份", 2, "warning")
+		return false
+	end
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(readfile(path))
+	end)
+	if not ok or type(data) ~= "table" then
+		self:Notify("配置", "备份文件损坏", 2, "alert")
+		return false
+	end
+	self:Deserialize(data)
+	self:QueueSave()
+	self:Notify("配置", "已回滚到备份 " .. index, 1.8, "info")
+	return true
+end
+
+function Library:SaveConfig(name, silent)
+	if not self.CanFile then
+		if not silent then
+			self:Notify("配置", "当前环境不支持文件操作", 2.5, "warning")
+		end
+		return false
+	end
+	name = sanitize(name)
+	local ok, err = pcall(function()
+		if not isfolder(self.Folder) then
+			makefolder(self.Folder)
+		end
+		local path = self.Folder .. "/" .. name .. ".json"
+		if isfile(path) then
+			local now = os.time()
+			self.BackupAt = self.BackupAt or {}
+			if not silent or now - (self.BackupAt[name] or 0) >= 180 then
+				self.BackupAt[name] = now
+				for i = 3, 2, -1 do
+					local from = self:BackupPath(name, i - 1)
+					if isfile(from) then
+						writefile(self:BackupPath(name, i), readfile(from))
+					end
+				end
+				writefile(self:BackupPath(name, 1), readfile(path))
+			end
+		end
+		writefile(path, HttpService:JSONEncode(self:Serialize()))
+	end)
+	if ok then
+		self.Meta.Config = name
+		self:SaveMeta()
+		if not silent then
+			self:Notify("配置", "已保存：" .. name, 1.8, "info")
+		end
+	else
+		warn("[ClickGui] " .. tostring(err))
+		if not silent then
+			self:Notify("配置", "保存失败", 2.5, "alert")
+		end
+	end
+	return ok
+end
+
+function Library:LoadConfig(name, silent, part)
+	if not self.CanFile then
+		if not silent then
+			self:Notify("配置", "当前环境不支持文件操作", 2.5, "warning")
+		end
+		return false
+	end
+	name = sanitize(name)
+	local path = self.Folder .. "/" .. name .. ".json"
+	local okExists, exists = pcall(isfile, path)
+	if not okExists or not exists then
+		if not silent then
+			self:Notify("配置", "找不到配置：" .. name, 2.5, "warning")
+		end
+		return false
+	end
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(readfile(path))
+	end)
+	if not ok or type(data) ~= "table" then
+		if not silent then
+			self:Notify("配置", "配置文件损坏", 2.5, "alert")
+		end
+		return false
+	end
+	local payload = data
+	if part == "外观" then
+		payload = {Theme = data.Theme, Categories = data.Categories, CustomCats = data.CustomCats}
+	elseif part == "功能" then
+		payload = {Modules = data.Modules}
+	end
+	self:Deserialize(payload)
+	if not part then
+		self.Meta.Config = name
+		self:SaveMeta()
+	else
+		self:QueueSave()
+	end
+	if not silent then
+		self:Notify("配置", "已加载" .. (part and (part .. "：") or "：") .. name, 1.8, "info")
+	end
+	return true
+end
+
+function Library:DeleteConfig(name)
+	if not self.CanFile or not delfile then
+		self:Notify("配置", "当前环境不支持删除", 2.5, "warning")
+		return false
+	end
+	name = sanitize(name)
+	local ok = pcall(function()
+		local path = self.Folder .. "/" .. name .. ".json"
+		if isfile(path) then
+			delfile(path)
+		end
+	end)
+	if ok then
+		self:Notify("配置", "已删除：" .. name, 1.8, "info")
+	end
+	return ok
+end
+
+function Library:SetFilter(mode)
+	self.Filter = mode
+	self:RefreshFilter()
+end
+
+function Library:RefreshFilter()
+	local content = self.Search.Text:lower()
+	for _, module in self.Modules do
+		local okSearch = content == "" or module.Name:lower():find(content, 1, true) ~= nil or (module.Display ~= nil and module.Display:lower():find(content, 1, true) ~= nil)
+		if not okSearch and content:match("^%a+$") then
+			okSearch = string.find(pinyinOf(module.Name), content, 1, true) ~= nil or (module.Display ~= nil and string.find(pinyinOf(module.Display), content, 1, true) ~= nil)
+		end
+		local okFilter = self.Filter == "全部" or (self.Filter == "已启用" and module.Enabled) or (self.Filter == "未启用" and not module.Enabled) or (self.Filter == "最近" and table.find(self.Recent, module.Key) ~= nil) or (self.Filter == "收藏" and module.Pinned == true)
+		module.Container.Visible = okSearch and okFilter and not module.Hidden
+	end
+end
+
+function Library:SetVisible(state)
+	if self.Visible == state then return end
+	self.Visible = state
+	self:UpdateGrip()
+	local dim = 1 - self.Theme.Dim / 100
+	if state then
+		self.Root.Visible = true
+		self:Onboard()
+		if animEnabled then
+			self.Root.BackgroundTransparency = 1
+			self.OpenScale.Scale = 0.94
+			tween(self.Root, {BackgroundTransparency = dim}, 0.28)
+			tween(self.OpenScale, {Scale = 1}, 0.28)
+			if self.Theme.Stagger and not self.Theme.Perf then
+				local i = 0
+				for _, cat in self.Categories do
+					if not cat.Floating then
+						cat:PlayEntrance(i * 0.045)
+						i += 1
+					end
+				end
+			end
+		else
+			self.Root.BackgroundTransparency = dim
+			self.OpenScale.Scale = 1
+		end
+		tween(self.Blur, {Size = self:BlurSize()}, 0.28)
+	else
+		tween(self.Root, {BackgroundTransparency = 1}, 0.2)
+		tween(self.Blur, {Size = 0}, 0.2)
+		task.delay(0.2, function()
+			if not self.Visible then
+				self.Root.Visible = false
+			end
+		end)
+	end
+end
+
+function Library:Lock(state)
+	self.Scroller.ScrollingEnabled = not state
+	for _, category in self.Categories do
+		category.Body.ScrollingEnabled = not state
+	end
+end
+
+function Library:KillToast(rec)
+	if not rec.Alive then return end
+	rec.Alive = false
+	local i = table.find(self.ToastList, rec)
+	if i then
+		table.remove(self.ToastList, i)
+	end
+	if self.ToastMap[rec.Key] == rec then
+		self.ToastMap[rec.Key] = nil
+	end
+	rec.Frame:Destroy()
+end
+
+function Library:Notify(title, content, duration, kind)
+	if not self.Theme.Notifications then return end
+	duration = duration or 1.6
+	local icon = kind == "warning" and Assets.Warning or kind == "alert" and Assets.Alert or Assets.Info
+	local existing = self.ToastMap[title]
+	if existing and existing.Alive then
+		existing.Token += 1
+		local token = existing.Token
+		existing.Content.Text = content
+		existing.Icon.Image = icon
+		existing.Progress.Size = UDim2.new(1, -12, 0, 2)
+		tween(existing.Progress, {Size = UDim2.fromOffset(0, 2)}, duration)
+		task.delay(duration, function()
+			if existing.Alive and existing.Token == token then
+				self:KillToast(existing)
+			end
+		end)
+		return
+	end
+	while #self.ToastList >= 3 do
+		self:KillToast(self.ToastList[1])
+	end
+	local p = self:Palette(1)
+	self.ToastOrder += 1
+	local frame = create("Frame", {
+		Size = UDim2.fromOffset(230, 54),
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		LayoutOrder = self.ToastOrder
+	}, self.Toasts)
+	local style = makeGlass(frame, self.Theme.Corner)
+	style(self, p, p.Bg, self.Theme.Corner)
+	local iconLabel = create("ImageLabel", {
+		Size = UDim2.fromOffset(26, 26),
+		Position = UDim2.fromOffset(12, 13),
+		BackgroundTransparency = 1,
+		Image = icon,
+		ImageColor3 = p.Text
+	}, frame)
+	create("TextLabel", {
+		Size = UDim2.new(1, -60, 0, 20),
+		Position = UDim2.fromOffset(48, 8),
+		BackgroundTransparency = 1,
+		Text = title,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = p.Text,
+		TextSize = 16,
+		Font = T.FontBold
+	}, frame)
+	local contentLabel = create("TextLabel", {
+		Size = UDim2.new(1, -60, 0, 18),
+		Position = UDim2.fromOffset(48, 28),
+		BackgroundTransparency = 1,
+		Text = content,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = p.Sub,
+		TextSize = 14,
+		Font = T.Font,
+		TextTruncate = Enum.TextTruncate.AtEnd
+	}, frame)
+	local progress = create("Frame", {
+		Size = UDim2.new(1, -12, 0, 2),
+		Position = UDim2.new(0, 6, 1, -4),
+		BackgroundColor3 = p.Accent,
+		BorderSizePixel = 0
+	}, frame)
+	tween(progress, {Size = UDim2.fromOffset(0, 2)}, duration)
+	local rec = {Frame = frame, Content = contentLabel, Icon = iconLabel, Progress = progress, Token = 0, Alive = true, Key = title}
+	table.insert(self.ToastList, rec)
+	self.ToastMap[title] = rec
+	task.delay(duration, function()
+		if rec.Alive and rec.Token == 0 then
+			self:KillToast(rec)
+		end
+	end)
+end
+
+function Library:LayoutHud()
+	local th = self.Theme
+	local hud = self.Hud
+	local pos = th.HudPos
+	local right = pos == "右上" or pos == "右下"
+	local bottom = pos == "右下" or pos == "左下"
+	hud.Frame.Visible = th.HudShow
+	hud.Frame.AnchorPoint = Vector2.new(right and 1 or 0, bottom and 1 or 0)
+	hud.Frame.Position = UDim2.new(right and 1 or 0, right and -8 or 8, bottom and 1 or 0, bottom and -10 or 60)
+	hud.Layout.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+end
+
+function Library:HudColorize(hue)
+	local th = self.Theme
+	local p = self:Palette(1)
+	local list = self.Hud.Sorted
+	if not list then return end
+	local mode = th.HudColor
+	hue = hue or self.Hue
+	local custom = W
+	if mode == "自定义" then
+		local ok, parsed = pcall(Color3.fromHex, th.HudHex)
+		if ok then
+			custom = parsed
+		end
+	end
+	for i, rec in list do
+		local c
+		if mode == "彩虹" then
+			c = Color3.fromHSV((hue - (i - 1) * 0.045) % 1, 0.65, 1)
+		elseif mode == "自定义" then
+			c = custom:Lerp(B, math.clamp((i - 1) * 0.06, 0, 0.45))
+		else
+			c = p.Accent:Lerp(p.Sub, math.clamp((i - 1) * 0.12, 0, 0.75))
+		end
+		rec.Label.TextColor3 = c
+		rec.Bar.BackgroundColor3 = c
+	end
+end
+
+function Library:RefreshHud()
+	local hud = self.Hud
+	local th = self.Theme
+	local p = self:Palette(1)
+	local pos = th.HudPos
+	local right = pos == "右上" or pos == "右下"
+	local bottom = pos == "右下" or pos == "左下"
+	local list = {}
+	for module, rec in hud.Entries do
+		local extra = extraOf(module)
+		local shown = module.Display or module.Name
+		local plain = shown .. (extra or "")
+		rec.Label.Text = shown .. (extra and (' <font color="#' .. p.Sub:ToHex() .. '">' .. extra .. "</font>") or "")
+		rec.Length = utf8.len(plain) or #plain
+		rec.Label.TextSize = th.FontSize
+		textShadow(rec.Label, th)
+		rec.Entry.BackgroundColor3 = p.Bg
+		rec.Entry.BackgroundTransparency = th.HudBg and math.clamp(th.Transparency + 0.3, 0, 1) or 1
+		rec.Bar.Visible = th.HudBar
+		rec.Bar.LayoutOrder = right and 2 or 0
+		table.insert(list, rec)
+	end
+	table.sort(list, function(a, c)
+		if th.HudSort == "字数" and a.Length ~= c.Length then
+			return a.Length > c.Length
+		end
+		return a.Module.Name < c.Module.Name
+	end)
+	for i, rec in list do
+		rec.Holder.LayoutOrder = bottom and -i or i
+	end
+	hud.Sorted = list
+	self:HudColorize()
+end
+
+function Library:HudAdd(module)
+	local hud = self.Hud
+	if hud.Entries[module] then
+		self:RefreshHud()
+		return
+	end
+	local holder = create("Frame", {
+		Name = module.Name,
+		Size = UDim2.new(0, 0, 0, 24),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		ClipsDescendants = true
+	}, hud.Frame)
+	local entry = create("Frame", {
+		Size = UDim2.new(0, 0, 0, 24),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BorderSizePixel = 0
+	}, holder)
+	corner(entry, 4)
+	padding(entry, 8, 8, 0, 0)
+	create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Padding = UDim.new(0, 6)
+	}, entry)
+	local label = create("TextLabel", {
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		RichText = true,
+		Text = module.Name,
+		TextSize = 16,
+		Font = T.FontBold,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		LayoutOrder = 1
+	}, entry)
+	local bar = create("Frame", {
+		Size = UDim2.fromOffset(2, 14),
+		BorderSizePixel = 0,
+		LayoutOrder = 2
+	}, entry)
+	corner(bar, 1)
+	local rec = {Module = module, Holder = holder, Entry = entry, Label = label, Bar = bar, Length = 0}
+	hud.Entries[module] = rec
+	self:RefreshHud()
+	if animEnabled then
+		local bg = entry.BackgroundTransparency
+		entry.BackgroundTransparency = 1
+		label.TextTransparency = 1
+		bar.BackgroundTransparency = 1
+		holder.Size = UDim2.new(0, 0, 0, 0)
+		tween(holder, {Size = UDim2.new(0, 0, 0, 24)}, 0.25)
+		tween(entry, {BackgroundTransparency = bg}, 0.25)
+		tween(label, {TextTransparency = 0}, 0.25)
+		tween(bar, {BackgroundTransparency = 0}, 0.25)
+	end
+end
+
+function Library:HudRemove(module, immediate)
+	local hud = self.Hud
+	local rec = hud.Entries[module]
+	if not rec then return end
+	hud.Entries[module] = nil
+	if immediate or not animEnabled then
+		rec.Holder:Destroy()
+	else
+		tween(rec.Holder, {Size = UDim2.new(0, 0, 0, 0)}, 0.22)
+		tween(rec.Entry, {BackgroundTransparency = 1}, 0.2)
+		tween(rec.Label, {TextTransparency = 1}, 0.2)
+		tween(rec.Bar, {BackgroundTransparency = 1}, 0.2)
+		task.delay(0.25, function()
+			rec.Holder:Destroy()
+		end)
+	end
+	self:RefreshHud()
+end
+
+function Library:HudUpdate(module)
+	if module.Enabled then
+		self:HudAdd(module)
+	else
+		self:HudRemove(module)
+	end
+end
+
+function Library:CreateQuick(module, x, y)
+	self:RemoveQuick(module, true)
+	local btn = create("TextButton", {
+		Name = randomName(),
+		Size = UDim2.fromOffset(46, 46),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(x, y),
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 8
+	}, self.Gui)
+	local style = makeGlass(btn, 23)
+	local label = create("TextLabel", {
+		Size = UDim2.new(1, -8, 1, -8),
+		Position = UDim2.fromOffset(4, 4),
+		BackgroundTransparency = 1,
+		Text = module.Name,
+		TextScaled = true,
+		Font = T.FontBold,
+		ZIndex = 9
+	}, btn)
+	create("UITextSizeConstraint", {MaxTextSize = 15, MinTextSize = 8}, label)
+	local record = {Button = btn, X = x, Y = y}
+	record.Refresh = self:Reg(function()
+		local p = self:Palette(1)
+		local on = module.Enabled
+		local th = self.Theme
+		local size = th.QuickSize
+		local shape = th.QuickShape
+		btn.Size = UDim2.fromOffset(size, size)
+		style(self, p, on and p.RowOn or p.Head, shape == "圆形" and size / 2 or (shape == "方形" and 4 or th.Corner + 4))
+		btn.BackgroundTransparency = 1 - (th.QuickOpacity / 100) * (1 - math.clamp(th.Transparency - 0.1, 0, 1))
+		local shownName = module.Display or module.Name
+		if th.QuickLabel == "首字" then
+			label.Text = shownName:match("[\1-\127\194-\244][\128-\191]*") or shownName
+		else
+			label.Text = shownName
+		end
+		label.TextColor3 = on and p.OnText or p.HeadText
+	end)
+	self.Quicks[module.Key] = record
+	self:MakeDraggable(btn, btn, {
+		OnTap = function()
+			module:Toggle()
+		end,
+		HoldTime = 1,
+		OnHold = function()
+			self:RemoveQuick(module)
+		end,
+		OnMoved = function()
+			record.X = btn.Position.X.Offset
+			record.Y = btn.Position.Y.Offset
+			self:QueueSave()
+		end,
+		GetScale = function()
+			return 1
+		end
+	})
+	return record
+end
+
+function Library:RemoveQuick(module, silent)
+	local record = self.Quicks[module.Key]
+	if not record then return end
+	self.Quicks[module.Key] = nil
+	self:Unreg(record.Refresh)
+	record.Button:Destroy()
+	if not silent then
+		self:Notify("快捷按钮", "已移除：" .. module.Name, 1.4, "info")
+		self:QueueSave()
+	end
+end
+
+function Library:BeginPlace(module)
+	self.Placing = module
+	self.PlaceArmed = os.clock() + 0.4
+	self:SetVisible(false)
+	self:Notify("快捷按钮", "点击屏幕任意位置放置「" .. module.Name .. "」", 3, "info")
+	task.delay(12, function()
+		if self.Placing == module then
+			self.Placing = nil
+			self:SetVisible(true)
+		end
+	end)
+end
+
+function Library:Destroy()
+	self.Destroyed = true
+	self.Maid:Clean()
+	table.clear(self.Drags)
+	local public = env.__CLICKGUI_LIB
+	if public and public.Window == self then
+		public.Window = nil
+	end
+end
+
+function Library:AddConflict(a, b)
+	self.Conflicts[a] = self.Conflicts[a] or {}
+	self.Conflicts[b] = self.Conflicts[b] or {}
+	if not table.find(self.Conflicts[a], b) then
+		table.insert(self.Conflicts[a], b)
+	end
+	if not table.find(self.Conflicts[b], a) then
+		table.insert(self.Conflicts[b], a)
+	end
+end
+
+function Library:PushRecent(key)
+	local i = table.find(self.Recent, key)
+	if i then
+		table.remove(self.Recent, i)
+	end
+	table.insert(self.Recent, 1, key)
+	while #self.Recent > 8 do
+		table.remove(self.Recent)
+	end
+end
+
+function Library:Click()
+	if not self.Theme.SoundOn then return end
+	if not self.ClickSound then
+		self.ClickSound = create("Sound", {Name = randomName()}, self.Gui)
+	end
+	local id = tostring(self.Theme.SoundId or ""):match("^%d+$") or "6895079853"
+	self.ClickSound.SoundId = "rbxassetid://" .. id
+	self.ClickSound.Volume = math.clamp(self.Theme.SoundVolume, 0, 100) / 100
+	self.ClickSound:Play()
+end
+
+function Library:UpdateFps()
+	local th = self.Theme
+	local need = th.FpsShow or (th.AutoPerf and not th.Perf)
+	if self.FpsLabel then
+		self.FpsLabel.Visible = th.FpsShow
+	end
+	if need and not self.FpsConn then
+		self.FpsAcc, self.FpsFrames, self.FpsLow = 0, 0, 0
+		self.FpsConn = RunService.Heartbeat:Connect(function(dt)
+			self.FpsAcc += dt
+			self.FpsFrames += 1
+			if self.FpsAcc >= 0.5 then
+				local fps = math.floor(self.FpsFrames / self.FpsAcc + 0.5)
+				self.Fps = fps
+				self.FpsAcc, self.FpsFrames = 0, 0
+				if self.FpsLabel then
+					self.FpsLabel.Text = fps .. " FPS"
+				end
+				if self.Theme.AutoPerf and not self.Theme.Perf then
+					if fps < 24 then
+						self.FpsLow += 1
+					else
+						self.FpsLow = 0
+					end
+					if self.FpsLow >= 12 then
+						self.FpsLow = 0
+						self.Theme.Perf = true
+						if self.Controls.Perf then
+							self.Controls.Perf:SetValue(true, true)
+						end
+						self:ApplyTheme()
+						self:QueueSave()
+						self:Notify("性能", "帧率过低，已自动开启性能模式", 3, "warning")
+					end
+				end
+			end
+		end)
+		self.Maid:Give(self.FpsConn)
+	elseif not need and self.FpsConn then
+		self.FpsConn:Disconnect()
+		self.FpsConn = nil
+	end
+end
+
+function Library:CheckTimeTheme()
+	local m = self.Meta
+	if not m.TimeSwitch then return end
+	local ok, hour = pcall(function()
+		return tonumber(os.date("%H"))
+	end)
+	if not ok or not hour then return end
+	local night
+	if m.NightFrom == m.NightTo then
+		night = false
+	elseif m.NightFrom < m.NightTo then
+		night = hour >= m.NightFrom and hour < m.NightTo
+	else
+		night = hour >= m.NightFrom or hour < m.NightTo
+	end
+	local target = night and m.NightTheme or m.DayTheme
+	if target == "" or target == "（无）" or target == self.TimeApplied then return end
+	if self:LoadTheme(target) then
+		self.TimeApplied = target
+	end
+end
+
+function Library:StartTimeLoop()
+	if self.TimeLoop then return end
+	self.TimeLoop = true
+	local function step()
+		if self.Destroyed then return end
+		self:CheckTimeTheme()
+		task.delay(60, step)
+	end
+	step()
+end
+
+function Library:Onboard()
+	if self.Meta.Onboarded or not self.IsReady then return end
+	self.Meta.Onboarded = true
+	self:SaveMeta()
+	local tips = {
+		"点功能开关，点右侧的 ⋮ 展开它的设置",
+		"长按功能可以放置快捷按钮",
+		"设置里可以搜索、撤销和预览外观"
+	}
+	for i, tip in tips do
+		task.delay(0.5 + (i - 1) * 3, function()
+			if not self.Destroyed and self.Visible then
+				self:Notify("提示 " .. i, tip, 2.8, "info")
+			end
+		end)
+	end
+end
+
+function Library:Ready()
+	if self.IsReady then
+		return self
+	end
+	if self.Meta.AutoLoad then
+		local name = self.Meta.Config
+		if self.Meta.AutoBind then
+			local bound = self.Meta.Binds[tostring(game.PlaceId)]
+			if bound then
+				name = bound
+			end
+		end
+		self:LoadConfig(name, true)
+	end
+	self.IsReady = true
+	self:RefreshModList()
+	self:StartTimeLoop()
+	return self
+end
+
+function Library.new(options)
+	options = options or {}
+	local self = setmetatable({
+		Categories = {},
+		Modules = {},
+		ModulesByKey = {},
+		Regs = {},
+		Drags = {},
+		Rainbows = {},
+		Undo = {},
+		Redo = {},
+		Recent = {},
+		Conflicts = {},
+		FlowList = setmetatable({}, {__mode = "k"}),
+		EditMode = false,
+		PointerDown = false,
+		Quicks = {},
+		Controls = {},
+		ToastList = {},
+		ToastMap = {},
+		ToastOrder = 0,
+		Visible = false,
+		Filter = "全部",
+		Hue = 0,
+		Loading = false,
+		IsReady = false,
+		SaveToken = 0,
+		ThemePending = false,
+		Keybind = options.Keybind or Enum.KeyCode.RightShift,
+		Theme = {},
+		Meta = {Config = "default", AutoSave = true, AutoLoad = true, AutoBind = true, Binds = {}, Onboarded = false, TimeSwitch = false, DayTheme = "", NightTheme = "", NightFrom = 19, NightTo = 7},
+		Maid = Maid.new()
+	}, Library)
+	for k, v in DefaultTheme do
+		self.Theme[k] = v
+	end
+	if options.Title then
+		self.Theme.TitleText = options.Title
+	end
+	animEnabled = self.Theme.Animations
+	animSpeed = math.max(self.Theme.AnimSpeed, 20) / 100
+	self:BuildPals()
+	self.CanFile = (writefile and readfile and isfile and isfolder and makefolder) and true or false
+	self:LoadMeta()
+
+	local gui = create("ScreenGui", {
+		Name = randomName(),
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 999999,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	})
+	local parented = false
+	if gethui then
+		parented = pcall(function()
+			gui.Parent = gethui()
+		end)
+	end
+	if not parented then
+		parented = pcall(function()
+			gui.Parent = game:GetService("CoreGui")
+		end)
+	end
+	if not parented then
+		gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	end
+	self.Gui = gui
+	self.Maid:Give(gui)
+
+	local blur = create("BlurEffect", {Name = randomName(), Size = 0})
+	pcall(function()
+		blur.Parent = Lighting
+	end)
+	self.Blur = blur
+	self.Maid:Give(blur)
+
+	local root = create("Frame", {
+		Name = "Root",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = W,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Visible = false
+	}, gui)
+	self.Root = root
+	self.BgGrad = create("UIGradient", {Rotation = 90}, root)
+	self.BgImage = create("ImageLabel", {
+		Name = "BgImage",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		ScaleType = Enum.ScaleType.Crop,
+		ImageTransparency = 1,
+		Visible = false,
+		ZIndex = 0
+	}, root)
+	self:ApplyBackground()
+	self.Scale = create("UIScale", {Scale = 1}, root)
+
+	local hudFrame = create("Frame", {
+		Name = "Hud",
+		Size = UDim2.new(0, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		BackgroundTransparency = 1
+	}, gui)
+	local hudLayout = create("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 3)
+	}, hudFrame)
+	local hudScale = create("UIScale", {Scale = 1}, hudFrame)
+	self.Hud = {Frame = hudFrame, Layout = hudLayout, Scale = hudScale, Entries = {}, Sorted = {}}
+
+	self:UpdateScale()
+	if workspace.CurrentCamera then
+		self.Maid:Give(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			self:UpdateScale()
+		end))
+	end
+
+	self:Reg(function()
+		self:LayoutHud()
+		self:RefreshHud()
+	end)
+
+	local titleLabel = create("TextLabel", {
+		Size = UDim2.fromOffset(220, 36),
+		Position = UDim2.fromOffset(16, 8),
+		BackgroundTransparency = 1,
+		Text = self.Theme.TitleText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = W,
+		TextStrokeTransparency = 0.7,
+		TextSize = 26,
+		Font = T.FontBold
+	}, root)
+	local titleGrad = create("UIGradient", {Rotation = 0}, titleLabel)
+	self:Reg(function()
+		local p = self:Palette(1)
+		titleLabel.Text = self.Theme.TitleText
+		titleLabel.Position = UDim2.fromOffset(16 + self.Theme.SafeInset, 8)
+		titleGrad.Color = ColorSequence.new(W, p.TintColor or W)
+		titleGrad.Enabled = p.TintColor ~= nil
+	end)
+
+	local searchHolder = create("Frame", {
+		Size = UDim2.fromOffset(240, 34),
+		Position = UDim2.new(0.5, 0, 0, 9),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BorderSizePixel = 0
+	}, root)
+	local searchStyle = makeGlass(searchHolder, 10)
+	local searchIcon = create("ImageLabel", {
+		Size = UDim2.fromOffset(14, 14),
+		Position = UDim2.new(1, -26, 0.5, -7),
+		BackgroundTransparency = 1,
+		Image = Assets.Search
+	}, searchHolder)
+	local search = create("TextBox", {
+		Size = UDim2.new(1, -44, 1, 0),
+		Position = UDim2.fromOffset(14, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		PlaceholderText = "搜索功能...",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 16,
+		Font = T.Font,
+		ClearTextOnFocus = false
+	}, searchHolder)
+	self.Search = search
+
+	local gearButton = create("TextButton", {
+		Size = UDim2.fromOffset(34, 34),
+		Position = UDim2.new(1, -90, 0, 9),
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false
+	}, root)
+	local gearStyle = makeGlass(gearButton, 17)
+	local gearIcon = create("ImageLabel", {
+		Size = UDim2.fromOffset(16, 16),
+		Position = UDim2.fromOffset(9, 9),
+		BackgroundTransparency = 1,
+		Image = Assets.Settings
+	}, gearButton)
+
+	local closeButton = create("TextButton", {
+		Size = UDim2.fromOffset(34, 34),
+		Position = UDim2.new(1, -50, 0, 9),
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false
+	}, root)
+	local closeStyle = makeGlass(closeButton, 17)
+	local closeIcon = create("ImageLabel", {
+		Size = UDim2.fromOffset(20, 20),
+		Position = UDim2.fromOffset(7, 7),
+		BackgroundTransparency = 1,
+		Image = Assets.Close
+	}, closeButton)
+
+	self:Reg(function()
+		local p = self:Palette(1)
+		searchStyle(self, p, p.Bg, 10)
+		gearButton.Position = UDim2.new(1, -90 - self.Theme.SafeInset, 0, 9)
+		closeButton.Position = UDim2.new(1, -50 - self.Theme.SafeInset, 0, 9)
+		search.TextColor3 = p.Text
+		search.PlaceholderColor3 = p.Sub
+		searchIcon.ImageColor3 = p.Sub
+		gearStyle(self, p, p.Head, 17)
+		gearIcon.ImageColor3 = p.HeadText
+		closeStyle(self, p, p.Head, 17)
+		closeIcon.ImageColor3 = p.HeadText
+	end)
+
+	local scroller = create("ScrollingFrame", {
+		Name = "Scroller",
+		Size = UDim2.new(1, 0, 1, -52),
+		Position = UDim2.fromOffset(0, 52),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = W,
+		ScrollBarImageTransparency = 0.4,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ElasticBehavior = Enum.ElasticBehavior.Never
+	}, root)
+	self.ScrollLayout = create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 12),
+		VerticalAlignment = Enum.VerticalAlignment.Top
+	}, scroller)
+	self.ScrollPad = padding(scroller, 16, 16, 16, 0)
+	self.Scroller = scroller
+	self.OpenScale = create("UIScale", {Scale = 1}, scroller)
+
+	local toasts = create("Frame", {
+		Size = UDim2.fromOffset(240, 220),
+		Position = UDim2.new(0.5, 0, 0, 56),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 1
+	}, gui)
+	local toastLayout = create("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Top,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 6)
+	}, toasts)
+	self.ToastLayout = toastLayout
+	self.Toasts = toasts
+	self.FpsLabel = create("TextLabel", {
+		Name = "Fps",
+		Size = UDim2.fromOffset(72, 20),
+		Position = UDim2.new(0, 8, 1, -28),
+		BackgroundColor3 = B,
+		BackgroundTransparency = 0.5,
+		BorderSizePixel = 0,
+		Text = "-- FPS",
+		TextColor3 = W,
+		TextSize = 13,
+		Font = T.FontBold,
+		Visible = false
+	}, gui)
+	corner(self.FpsLabel, 5)
+	self:Reg(function()
+		self:LayoutToasts()
+	end)
+
+	local floatButton = create("TextButton", {
+		Size = UDim2.fromOffset(46, 46),
+		Position = UDim2.new(0, 10, 0.5, -23),
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 10
+	}, gui)
+	local floatStyle = makeGlass(floatButton, 12)
+	local floatIcon = create("ImageLabel", {
+		Size = UDim2.fromOffset(34, 34),
+		Position = UDim2.fromOffset(6, 6),
+		BackgroundTransparency = 1,
+		Image = Assets.Vape,
+		ZIndex = 11
+	}, floatButton)
+	self.FloatButton = floatButton
+	self:Reg(function()
+		local p = self:Palette(1)
+		local th = self.Theme
+		local size = th.FloatSize
+		local op = th.FloatOpacity / 100
+		floatButton.Size = UDim2.fromOffset(size, size)
+		floatIcon.Size = UDim2.fromOffset(size - 12, size - 12)
+		local shape = th.FloatShape
+		floatStyle(self, p, p.Head, shape == "圆形" and size / 2 or (shape == "方形" and 4 or th.Corner + 4))
+		local iid = tostring(th.FloatIconId or "")
+		floatIcon.Image = (iid ~= "" and tonumber(iid)) and ("rbxassetid://" .. iid) or Assets.Vape
+		floatButton.BackgroundTransparency = 1 - op * (1 - math.clamp(th.Transparency - 0.1, 0, 1))
+		floatIcon.ImageColor3 = p.HeadText
+		floatIcon.ImageTransparency = 1 - op
+	end)
+
+	self.Maid:Give(UserInputService.InputChanged:Connect(function(input)
+		if not isMove(input) then return end
+		if input.UserInputType == Enum.UserInputType.Touch then
+			if self.PointerDown then
+				self:UpdateGlow(input.Position, true)
+			end
+		else
+			self:UpdateGlow(input.Position, true)
+		end
+		for drag in self.Drags do
+			if drag.Input.UserInputType == Enum.UserInputType.Touch then
+				if input == drag.Input then
+					drag.OnMove(input)
+				end
+			elseif input.UserInputType == Enum.UserInputType.MouseMovement then
+				drag.OnMove(input)
+			end
+		end
+	end))
+
+	self.Maid:Give(UserInputService.InputEnded:Connect(function(input)
+		if not isPointer(input) then return end
+		self.PointerDown = false
+		self:UpdateGlow(input.Position, false)
+		for drag in table.clone(self.Drags) do
+			local match
+			if drag.Input.UserInputType == Enum.UserInputType.Touch then
+				match = input == drag.Input
+			else
+				match = input.UserInputType == Enum.UserInputType.MouseButton1
+			end
+			if match then
+				self.Drags[drag] = nil
+				if drag.OnEnd then
+					drag.OnEnd(input)
+				end
+			end
+		end
+	end))
+
+	self.Maid:Give(UserInputService.InputBegan:Connect(function(input, processed)
+		if isPointer(input) then
+			self.PointerDown = true
+			self:UpdateGlow(input.Position, true)
+		end
+		if self.Placing and isPointer(input) and os.clock() >= self.PlaceArmed then
+			local module = self.Placing
+			self.Placing = nil
+			local inset = GuiService:GetGuiInset()
+			self:CreateQuick(module, input.Position.X, input.Position.Y + inset.Y)
+			self:SetVisible(true)
+			self:QueueSave()
+			return
+		end
+		if processed then return end
+		if input.KeyCode == self.Keybind then
+			self:SetVisible(not self.Visible)
+		end
+	end))
+
+	local grip = create("TextButton", {
+		Name = "Grip",
+		Size = UDim2.fromOffset(40, 40),
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -14, 1, -14),
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		Visible = false,
+		ZIndex = 12
+	}, gui)
+	local gripStyle = makeGlass(grip, 20)
+	local gripLines = {}
+	for i = 1, 3 do
+		gripLines[i] = create("Frame", {
+			Size = UDim2.fromOffset(5 + i * 6, 2),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(34 - i * 4, 34 - i * 4),
+			Rotation = -45,
+			BorderSizePixel = 0,
+			ZIndex = 13
+		}, grip)
+	end
+	self.Grip = grip
+	self:Reg(function()
+		local p = self:Palette(1)
+		gripStyle(self, p, p.Head, 20)
+		for _, line in gripLines do
+			line.BackgroundColor3 = p.HeadText
+		end
+		self:UpdateGrip()
+	end)
+	grip.InputBegan:Connect(function(input)
+		if not isPointer(input) then return end
+		local startScale = self.Theme.UIScale
+		local startPos = input.Position
+		self:Lock(true)
+		self:StartDrag(input, function(cur)
+			local d = cur.Position - startPos
+			self:SetUIScale(startScale + (d.X + d.Y) / 6)
+		end, function()
+			self:Lock(false)
+			self:QueueSave()
+		end)
+	end)
+	if UserInputService.TouchPinch then
+		local base = 100
+		self.Maid:Give(UserInputService.TouchPinch:Connect(function(positions, scale, velocity, state)
+			if not self.Visible or not self.Theme.PinchScale then return end
+			if state == Enum.UserInputState.Begin then
+				base = self.Theme.UIScale
+			end
+			self:SetUIScale(base * scale)
+			if state == Enum.UserInputState.End then
+				self:QueueSave()
+			end
+		end))
+	end
+
+	self:MakeDraggable(floatButton, floatButton, {
+		OnTap = function()
+			self:SetVisible(not self.Visible)
+		end,
+		GetScale = function()
+			return 1
+		end
+	})
+
+	closeButton.MouseButton1Click:Connect(function()
+		self:SetVisible(false)
+	end)
+
+	search:GetPropertyChangedSignal("Text"):Connect(function()
+		self:RefreshFilter()
+	end)
+
+	local settingsCat = self:CreateCategory({
+		Name = "界面设置",
+		Icon = Assets.Settings,
+		Floating = true,
+		Width = 256,
+		PaletteIndex = 1
+	})
+	self.SettingsCategory = settingsCat
+	self:BuildSettings(settingsCat)
+	self:RefreshCatList()
+	gearButton.MouseButton1Click:Connect(function()
+		settingsCat.Holder.Visible = not settingsCat.Holder.Visible
+	end)
+
+	self.Maid:Give(function()
+		for _, record in self.Quicks do
+			record.Button:Destroy()
+		end
+	end)
+
+	local lp = Players.LocalPlayer
+	if lp and lp.CharacterAdded then
+		self.Maid:Give(lp.CharacterAdded:Connect(function()
+			task.delay(0.8, function()
+				if not self.Destroyed and self.Theme.Cape then
+					self:BuildCape()
+				end
+			end)
+		end))
+	end
+	self.Maid:Give(function()
+		self:DestroyCape()
+	end)
+
+	if options.Visible ~= false then
+		self:SetVisible(true)
+	end
+
+	return self
+end
+
+function Library:BuildAllSettings()
+	for _, e in self.SettingSections or {} do
+		e.Build()
+	end
+end
+
+function Library:BuildSettings(category)
+	local theme = self.Theme
+	local function P()
+		return self:Palette(1)
+	end
+	local b = Builder(self, category.Body, P, nil, nil, nil)
+	local controls = self.Controls
+
+	local function set(key, convert)
+		return function(v)
+			if convert then
+				theme[key] = convert(v)
+			else
+				theme[key] = v
+			end
+			self:QueueTheme()
+			self:QueueSave()
+		end
+	end
+
+	local sectionList = {}
+	self.SettingSections = sectionList
+	local sectionOrder = 20
+	local searchQuery = ""
+
+	local function lastItem(box)
+		local best
+		for _, c in box:GetChildren() do
+			if c:IsA("GuiObject") and (not best or c.LayoutOrder >= best.LayoutOrder) then
+				best = c
+			end
+		end
+		return best
+	end
+
+	local function paintSection(entry)
+		entry.Arrow.Text = entry.Open and "▾" or "▸"
+	end
+
+	local function section(title, build, open)
+		sectionOrder += 2
+		local entry = {Title = title, Built = false, Open = false, Items = {}}
+		local head = create("TextButton", {
+			Size = UDim2.new(1, 0, 0, 32),
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false,
+			LayoutOrder = sectionOrder
+		}, category.Body)
+		entry.Arrow = create("TextLabel", {
+			Size = UDim2.fromOffset(20, 32),
+			Position = UDim2.fromOffset(10, 0),
+			BackgroundTransparency = 1,
+			Text = "▸",
+			TextSize = 14,
+			Font = T.FontBold
+		}, head)
+		local label = create("TextLabel", {
+			Size = UDim2.new(1, -40, 1, 0),
+			Position = UDim2.fromOffset(30, 0),
+			BackgroundTransparency = 1,
+			Text = title,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextSize = 14,
+			Font = T.FontBold
+		}, head)
+		local line = create("Frame", {
+			Size = UDim2.new(1, -28, 0, 1),
+			Position = UDim2.new(0, 14, 1, -2),
+			BorderSizePixel = 0
+		}, head)
+		local box = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Visible = false,
+			LayoutOrder = sectionOrder + 1
+		}, category.Body)
+		create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, box)
+		entry.Head = head
+		entry.Box = box
+		self:Reg(function()
+			local p = P()
+			label.TextColor3 = p.Text
+			entry.Arrow.TextColor3 = p.Sub
+			line.BackgroundColor3 = p.Off
+		end)
+		function entry.Build()
+			if entry.Built then return end
+			entry.Built = true
+			local sb = Builder(self, box, P, nil, nil, nil)
+			local proxy = setmetatable({}, {__index = function(_, k)
+				local f = sb[k]
+				if type(f) ~= "function" then
+					return f
+				end
+				return function(_, arg)
+					local r = f(sb, arg)
+					if k ~= "CreateDivider" then
+						local item = lastItem(box)
+						if item then
+							table.insert(entry.Items, {Item = item, Name = string.lower(type(arg) == "table" and tostring(arg.Name) or tostring(arg))})
+						end
+					end
+					return r
+				end
+			end})
+			local ok, err = pcall(build, proxy)
+			if not ok then
+				warn("[ClickGui] " .. title .. ": " .. tostring(err))
+			end
+		end
+		function entry.SetOpen(state)
+			entry.Open = state
+			if state then
+				entry.Build()
+			end
+			box.Visible = state
+			paintSection(entry)
+		end
+		head.MouseButton1Click:Connect(function()
+			if searchQuery == "" then
+				entry.SetOpen(not entry.Open)
+			end
+		end)
+		table.insert(sectionList, entry)
+		if open then
+			entry.SetOpen(true)
+		end
+		return entry
+	end
+
+	local function applyFilter()
+		local q = string.lower(searchQuery)
+		for _, e in sectionList do
+			if q == "" then
+				e.Head.Visible = true
+				e.Box.Visible = e.Open
+				for _, it in e.Items do
+					it.Item.Visible = true
+				end
+			else
+				e.Build()
+				local titleHit = string.find(string.lower(e.Title), q, 1, true) ~= nil
+				if not titleHit and q:match("^%a+$") then
+					titleHit = string.find(pinyinOf(e.Title), q, 1, true) ~= nil
+				end
+				local any = titleHit
+				for _, it in e.Items do
+					local hit = titleHit or string.find(it.Name, q, 1, true) ~= nil
+				if not hit and q:match("^%a+$") then
+					hit = string.find(pinyinOf(it.Name), q, 1, true) ~= nil
+				end
+					it.Item.Visible = hit
+					any = any or hit
+				end
+				e.Head.Visible = any
+				e.Box.Visible = any
+			end
+			paintSection(e)
+		end
+	end
+
+	self.SearchBox = b:CreateTextBox({Name = "搜索设置", Placeholder = "输入关键字，如 圆角", Live = function(text)
+		searchQuery = text or ""
+		applyFilter()
+	end})
+	b:CreateButton({Name = "撤销外观改动", Callback = function()
+		self:UndoTheme()
+	end})
+	b:CreateButton({Name = "重做外观改动", Callback = function()
+		self:RedoTheme()
+	end})
+	b:CreateButton({Name = "开始预览（可放弃）", Callback = function()
+		self:StartPreview()
+	end})
+	b:CreateButton({Name = "保留预览", Callback = function()
+		self:KeepPreview()
+	end})
+	b:CreateButton({Name = "放弃预览", Callback = function()
+		self:DiscardPreview()
+	end})
+
+	section("预设", function(b)
+		controls.Preset = b:CreateDropdown({Name = "主题预设", List = PresetNames, Default = theme.Preset, Callback = function(v)
+			self:ApplyPreset(v)
+		end})
+		local codeBox = b:CreateTextBox({Name = "主题代码", Placeholder = "导出后复制，或粘贴后导入"})
+		b:CreateButton({Name = "导出当前主题", Callback = function()
+			local code = self:ExportTheme()
+			codeBox:SetValue(code, true)
+			if setclipboard then
+				pcall(setclipboard, code)
+				self:Notify("主题", "已导出并复制到剪贴板", 1.8, "info")
+			else
+				self:Notify("主题", "已导出到上方输入框", 1.8, "info")
+			end
+		end})
+		b:CreateButton({Name = "预览导入的主题（可放弃）", Callback = function()
+			local was = self.Previewing
+			if not was then
+				self:StartPreview()
+			end
+			if not self:ImportTheme(codeBox.Value) then
+				if not was then
+					self:DiscardPreview()
+				end
+				self:Notify("主题", "主题代码无效", 2, "warning")
+			end
+		end})
+		b:CreateButton({Name = "导入主题代码", Callback = function()
+			if self:ImportTheme(codeBox.Value) then
+				self:Notify("主题", "导入成功", 1.6, "info")
+			else
+				self:Notify("主题", "主题代码无效", 2, "warning")
+			end
+		end})
+	end, true)
+
+	section("配色", function(b)
+		controls.Mode = b:CreateDropdown({Name = "主题模式", List = {"深黑", "亮白", "阴阳"}, Default = theme.Mode, Callback = set("Mode")})
+		controls.Tint = b:CreateDropdown({Name = "强调色", List = {"纯黑白", "冷银", "暖金", "玫瑰", "自定义"}, Default = theme.Tint, Callback = set("Tint")})
+		controls.AccentPicker = b:CreateColorPicker({
+			Name = "自定义强调色",
+			NoRainbow = true,
+			ThemeKey = "AccentHex",
+			Default = Color3.fromHex(theme.AccentHex),
+			Callback = function(c)
+				theme.AccentHex = c:ToHex()
+				if theme.Tint ~= "自定义" then
+					theme.Tint = "自定义"
+					controls.Tint:SetValue("自定义", true)
+				end
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.TintMix = b:CreateSlider({Name = "着色强度", Min = 0, Max = 100, Default = theme.TintMix, Suffix = "%", Callback = set("TintMix")})
+		controls.AccentRainbow = b:CreateToggle({Name = "彩虹强调色", Default = theme.AccentRainbow, Callback = set("AccentRainbow")})
+		controls.BgTopPicker = b:CreateColorPicker({
+			Name = "背景色（上）",
+			NoRainbow = true,
+			ThemeKey = "BgTopHex",
+			Default = Color3.fromHex(theme.BgTopHex),
+			Callback = function(c)
+				theme.BgTopHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.BgBottomPicker = b:CreateColorPicker({
+			Name = "背景色（下）",
+			NoRainbow = true,
+			ThemeKey = "BgBottomHex",
+			Default = Color3.fromHex(theme.BgBottomHex),
+			Callback = function(c)
+				theme.BgBottomHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+	end)
+
+	section("质感", function(b)
+		controls.Gloss = b:CreateSlider({Name = "金属光泽", Min = 0, Max = 100, Default = theme.Gloss, Suffix = "%", Callback = set("Gloss")})
+		controls.Transparency = b:CreateSlider({
+			Name = "玻璃透明度",
+			Min = 0,
+			Max = 70,
+			Default = math.floor(theme.Transparency * 100 + 0.5),
+			Suffix = "%",
+			Callback = set("Transparency", function(v)
+				return v / 100
+			end)
+		})
+		controls.Stroke = b:CreateSlider({Name = "边框亮度", Min = 0, Max = 100, Default = theme.Stroke, Suffix = "%", Callback = set("Stroke")})
+		controls.StrokeW = b:CreateSlider({Name = "边框粗细", Min = 0, Max = 3, Step = 0.5, Default = theme.StrokeW, Callback = set("StrokeW")})
+		controls.Shadow = b:CreateSlider({Name = "阴影强度", Min = 0, Max = 100, Default = theme.Shadow, Suffix = "%", Callback = set("Shadow")})
+		controls.Corner = b:CreateSlider({Name = "圆角大小", Min = 0, Max = 18, Default = theme.Corner, Callback = set("Corner")})
+	end)
+
+	section("样式", function(b)
+		controls.PanelStyle = b:CreateDropdown({Name = "面板风格", List = {"玻璃", "实心", "轻描边"}, Default = theme.PanelStyle, Callback = set("PanelStyle")})
+		controls.EnabledStyle = b:CreateDropdown({Name = "启用样式", List = {"渐变填充", "纯色填充", "左侧光条", "发光描边"}, Default = theme.EnabledStyle, Callback = set("EnabledStyle")})
+		controls.EnabledColor = b:CreateDropdown({Name = "启用颜色", List = {"主题色", "光谱", "日落", "顺序渐变", "分类取色", "双色渐变"}, Default = theme.EnabledColor, Callback = set("EnabledColor")})
+		controls.EnabledHexA = b:CreateColorPicker({
+			Name = "渐变起点色",
+			NoRainbow = true,
+			ThemeKey = "EnabledHexA",
+			Default = Color3.fromHex(theme.EnabledHexA),
+			Callback = function(c)
+				theme.EnabledHexA = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.EnabledHexB = b:CreateColorPicker({
+			Name = "渐变终点色",
+			NoRainbow = true,
+			ThemeKey = "EnabledHexB",
+			Default = Color3.fromHex(theme.EnabledHexB),
+			Callback = function(c)
+				theme.EnabledHexB = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.ToggleStyle = b:CreateDropdown({Name = "开关样式", List = {"胶囊", "方块"}, Default = theme.ToggleStyle, Callback = set("ToggleStyle")})
+		controls.Shimmer = b:CreateToggle({Name = "流光动画", Default = theme.Shimmer, Callback = set("Shimmer")})
+		controls.ShimmerSpeed = b:CreateSlider({Name = "流光速度", Min = 10, Max = 100, Step = 5, Default = theme.ShimmerSpeed, Suffix = "%", Callback = set("ShimmerSpeed")})
+	end)
+
+	section("动效", function(b)
+		controls.FlowMode = b:CreateDropdown({Name = "流动边框", List = {"关闭", "主题", "强调色", "彩虹"}, Default = theme.FlowMode, Callback = set("FlowMode")})
+		controls.FlowSpeed = b:CreateSlider({Name = "边框流速", Min = 10, Max = 180, Step = 5, Default = theme.FlowSpeed, Suffix = "度/秒", Callback = set("FlowSpeed")})
+		controls.Ripple = b:CreateToggle({Name = "点击涟漪反馈", Default = theme.Ripple, Callback = set("Ripple")})
+		controls.Stagger = b:CreateToggle({Name = "入场错开动画", Default = theme.Stagger, Callback = set("Stagger")})
+		controls.TouchGlow = b:CreateToggle({Name = "手指跟随高光", Default = theme.TouchGlow, Callback = set("TouchGlow")})
+		controls.GlowStrength = b:CreateSlider({Name = "高光强度", Min = 10, Max = 100, Step = 5, Default = theme.GlowStrength, Suffix = "%", Callback = set("GlowStrength")})
+		controls.Wave = b:CreateToggle({Name = "状态扩散填充", Default = theme.Wave, Callback = set("Wave")})
+		controls.Micro = b:CreateToggle({Name = "控件细节动画", Default = theme.Micro, Callback = set("Micro")})
+	end)
+
+	section("高级配色（逐元素）", function(b)
+		controls.AutoContrast = b:CreateToggle({Name = "自动保证文字对比度", Default = theme.AutoContrast, Callback = set("AutoContrast")})
+		local function hexBox(key, name)
+			controls[key] = b:CreateTextBox({Name = name, Default = theme[key], Placeholder = "十六进制，留空自动", Callback = function(v)
+				v = tostring(v or ""):gsub("#", ""):gsub("%s", "")
+				if v ~= "" and not pcall(Color3.fromHex, v) then
+					self:Notify("配色", "颜色格式无效", 2, "warning")
+					controls[key]:SetValue(theme[key], true)
+					return
+				end
+				theme[key] = v
+				self:QueueTheme()
+				self:QueueSave()
+			end})
+		end
+		hexBox("ColBg", "面板背景")
+		hexBox("ColHead", "标题栏")
+		hexBox("ColRow", "功能行")
+		hexBox("ColRowOn", "启用色")
+		hexBox("ColText", "主文字")
+		hexBox("ColSub", "次要文字")
+		hexBox("ColFill", "开关/滑条色")
+		hexBox("ColRim", "边框高光")
+		b:CreateButton({Name = "检查文字对比度", Callback = function()
+			local r = self:ContrastReport()
+			local text = string.format("最低对比度 %.1f（建议 4.5 以上）", r)
+			self:Notify("配色", text, 3, r >= 4.5 and "info" or "warning")
+		end})
+		b:CreateButton({Name = "清除全部颜色覆盖", Callback = function()
+			for _, k in {"ColBg", "ColHead", "ColRow", "ColRowOn", "ColText", "ColSub", "ColFill", "ColRim"} do
+				theme[k] = ""
+			end
+			self:SyncControls()
+			self:ApplyTheme()
+			self:QueueSave()
+		end})
+	end)
+
+	section("披风（仅自己可见）", function(b)
+		controls.Cape = b:CreateToggle({Name = "启用披风", Default = theme.Cape, Callback = set("Cape")})
+		controls.CapeId = b:CreateTextBox({Name = "披风图案ID", Default = theme.CapeId, Placeholder = "数字ID，留空用默认图标", Callback = set("CapeId")})
+		controls.CapePicker = b:CreateColorPicker({
+			Name = "披风颜色",
+			NoRainbow = true,
+			ThemeKey = "CapeHex",
+			Default = Color3.fromHex(theme.CapeHex),
+			Callback = function(c)
+				theme.CapeHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.CapeW = b:CreateSlider({Name = "披风宽度", Min = 1, Max = 4, Step = 0.5, Default = theme.CapeW, Callback = set("CapeW")})
+		controls.CapeLen = b:CreateSlider({Name = "披风长度", Min = 2, Max = 6, Step = 0.5, Default = theme.CapeLen, Callback = set("CapeLen")})
+		controls.CapeSwing = b:CreateSlider({Name = "摆动幅度", Min = 0, Max = 200, Step = 10, Default = theme.CapeSwing, Suffix = "%", Callback = set("CapeSwing")})
+	end)
+
+	section("文字与细节", function(b)
+		controls.FontName = b:CreateDropdown({Name = "字体", List = {"默认", "Gotham", "Arial"}, Default = theme.FontName, Callback = set("FontName")})
+		controls.FontSize = b:CreateSlider({Name = "文字大小", Min = 12, Max = 20, Step = 1, Default = theme.FontSize, Callback = set("FontSize")})
+		controls.TextShadow = b:CreateDropdown({Name = "文字阴影", List = {"关闭", "轻", "重"}, Default = theme.TextShadow, Callback = set("TextShadow")})
+		controls.PanelGap = b:CreateSlider({Name = "面板间距", Min = 0, Max = 30, Step = 1, Default = theme.PanelGap, Callback = set("PanelGap")})
+		controls.RowGap = b:CreateSlider({Name = "功能行间距", Min = 0, Max = 8, Step = 1, Default = theme.RowGap, Callback = set("RowGap")})
+		controls.BarThick = b:CreateSlider({Name = "滚动条粗细", Min = 0, Max = 8, Step = 1, Default = theme.BarThick, Callback = set("BarThick")})
+		controls.DividerStyle = b:CreateDropdown({Name = "分隔线样式", List = {"实线", "渐隐", "点线", "隐藏"}, Default = theme.DividerStyle, Callback = set("DividerStyle")})
+	end)
+
+	section("渐变编辑", function(b)
+		controls.GradAngle = b:CreateSlider({Name = "渐变角度", Min = 0, Max = 360, Step = 15, Default = theme.GradAngle, Suffix = "°", Callback = set("GradAngle")})
+		controls.GradPos = b:CreateSlider({Name = "高光位置", Min = 10, Max = 90, Step = 2, Default = theme.GradPos, Suffix = "%", Callback = set("GradPos")})
+		controls.GradMode = b:CreateDropdown({Name = "渐变模式", List = {"跟随主题", "双色渐变", "金属拉丝", "玻璃"}, Default = theme.GradMode, Callback = set("GradMode")})
+		controls.GradTopPicker = b:CreateColorPicker({
+			Name = "渐变色（上）",
+			NoRainbow = true,
+			ThemeKey = "GradTopHex",
+			Default = Color3.fromHex(theme.GradTopHex),
+			Callback = function(c)
+				theme.GradTopHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.GradBottomPicker = b:CreateColorPicker({
+			Name = "渐变色（下）",
+			NoRainbow = true,
+			ThemeKey = "GradBottomHex",
+			Default = Color3.fromHex(theme.GradBottomHex),
+			Callback = function(c)
+				theme.GradBottomHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+	end)
+
+	section("布局", function(b)
+		local density = {["紧凑"] = {150, 30}, ["标准"] = {170, 34}, ["宽松"] = {196, 40}}
+		controls.Density = b:CreateDropdown({Name = "密度预设", List = {"紧凑", "标准", "宽松", "自定义"}, Default = theme.Density, Callback = function(v)
+			theme.Density = v
+			local d = density[v]
+			if d then
+				theme.PanelW = d[1]
+				theme.RowH = d[2]
+				controls.PanelW:SetValue(d[1], true)
+				controls.RowH:SetValue(d[2], true)
+			end
+			self:QueueTheme()
+			self:QueueSave()
+		end})
+		controls.PanelW = b:CreateSlider({Name = "面板宽度", Min = 140, Max = 240, Step = 5, Default = theme.PanelW, Callback = set("PanelW")})
+		controls.RowH = b:CreateSlider({Name = "行高", Min = 28, Max = 48, Step = 2, Default = theme.RowH, Callback = set("RowH")})
+		controls.SafeInset = b:CreateSlider({Name = "安全边距（刘海）", Min = 0, Max = 60, Step = 2, Default = theme.SafeInset, Callback = set("SafeInset")})
+		controls.PanelAlign = b:CreateDropdown({Name = "面板对齐（单手选底部）", List = {"顶部", "居中", "底部"}, Default = theme.PanelAlign, Callback = set("PanelAlign")})
+		controls.UIScale = b:CreateSlider({Name = "界面缩放", Min = 40, Max = 200, Default = theme.UIScale, Step = 5, Suffix = "%", Callback = set("UIScale")})
+		controls.ShowGrip = b:CreateToggle({Name = "显示缩放手柄", Default = theme.ShowGrip, Callback = set("ShowGrip")})
+		controls.PinchScale = b:CreateToggle({Name = "双指缩放界面", Default = theme.PinchScale, Callback = set("PinchScale")})
+		b:CreateButton({Name = "重置界面大小", Callback = function()
+			self:SetUIScale(100)
+			self:QueueSave()
+		end})
+	end)
+
+	section("效果", function(b)
+		controls.BgImageId = b:CreateTextBox({Name = "背景图片ID", Default = theme.BgImageId, Placeholder = "数字ID，留空关闭", Callback = set("BgImageId")})
+		controls.BgImageOpacity = b:CreateSlider({Name = "背景图片浓度", Min = 5, Max = 100, Step = 5, Default = theme.BgImageOpacity, Suffix = "%", Callback = set("BgImageOpacity")})
+		controls.Blur = b:CreateSlider({Name = "背景模糊", Min = 0, Max = 40, Default = theme.Blur, Callback = set("Blur")})
+		controls.Dim = b:CreateSlider({Name = "背景暗度", Min = 0, Max = 85, Default = theme.Dim, Suffix = "%", Callback = set("Dim")})
+		controls.Animations = b:CreateToggle({Name = "动画效果", Default = theme.Animations, Callback = set("Animations")})
+		controls.AnimSpeed = b:CreateSlider({Name = "动画速度", Min = 40, Max = 200, Step = 10, Default = theme.AnimSpeed, Suffix = "%", Callback = set("AnimSpeed")})
+		controls.Perf = b:CreateToggle({Name = "性能模式", Default = theme.Perf, Callback = set("Perf")})
+		controls.AutoPerf = b:CreateToggle({Name = "掉帧自动开启性能模式", Default = theme.AutoPerf, Callback = set("AutoPerf")})
+		controls.FpsShow = b:CreateToggle({Name = "显示帧率", Default = theme.FpsShow, Callback = set("FpsShow")})
+		controls.SoundOn = b:CreateToggle({Name = "开关音效", Default = theme.SoundOn, Callback = set("SoundOn")})
+		controls.SoundVolume = b:CreateSlider({Name = "音效音量", Min = 0, Max = 100, Step = 5, Default = theme.SoundVolume, Suffix = "%", Callback = set("SoundVolume")})
+		controls.SoundId = b:CreateTextBox({Name = "音效ID", Default = theme.SoundId, Placeholder = "数字ID，默认点击音", Callback = set("SoundId")})
+		controls.SliderGuard = b:CreateToggle({Name = "滑条防误触", Default = theme.SliderGuard, Callback = set("SliderGuard")})
+	end)
+
+	section("标题与按钮", function(b)
+		controls.TitleText = b:CreateTextBox({Name = "界面标题", Default = theme.TitleText, Placeholder = "输入标题", Callback = set("TitleText")})
+		controls.FloatSize = b:CreateSlider({Name = "悬浮按钮大小", Min = 36, Max = 64, Step = 2, Default = theme.FloatSize, Callback = set("FloatSize")})
+		controls.FloatOpacity = b:CreateSlider({Name = "悬浮按钮不透明度", Min = 20, Max = 100, Step = 5, Default = theme.FloatOpacity, Suffix = "%", Callback = set("FloatOpacity")})
+		controls.FloatShape = b:CreateDropdown({Name = "悬浮按钮形状", List = {"圆形", "圆角", "方形"}, Default = theme.FloatShape, Callback = set("FloatShape")})
+		controls.FloatIconId = b:CreateTextBox({Name = "悬浮按钮图标ID", Default = theme.FloatIconId, Placeholder = "数字ID，留空用默认", Callback = set("FloatIconId")})
+	end)
+
+	section("快捷按钮样式", function(b)
+		controls.QuickShape = b:CreateDropdown({Name = "按钮形状", List = {"圆形", "圆角", "方形"}, Default = theme.QuickShape, Callback = set("QuickShape")})
+		controls.QuickSize = b:CreateSlider({Name = "按钮大小", Min = 32, Max = 80, Step = 2, Default = theme.QuickSize, Callback = set("QuickSize")})
+		controls.QuickLabel = b:CreateDropdown({Name = "按钮文字", List = {"名称", "首字"}, Default = theme.QuickLabel, Callback = set("QuickLabel")})
+		controls.QuickOpacity = b:CreateSlider({Name = "按钮不透明度", Min = 20, Max = 100, Step = 5, Default = theme.QuickOpacity, Suffix = "%", Callback = set("QuickOpacity")})
+	end)
+
+	section("通知", function(b)
+		controls.Notifications = b:CreateToggle({Name = "弹出通知", Default = theme.Notifications, Callback = set("Notifications")})
+		controls.ToastPos = b:CreateDropdown({Name = "通知位置", List = {"顶部居中", "右上", "右下", "左下"}, Default = theme.ToastPos, Callback = set("ToastPos")})
+	end)
+
+	section("功能列表", function(b)
+		controls.HudShow = b:CreateToggle({Name = "显示功能列表", Default = theme.HudShow, Callback = set("HudShow")})
+		controls.HudPos = b:CreateDropdown({Name = "列表位置", List = {"右上", "左上", "右下", "左下"}, Default = theme.HudPos, Callback = set("HudPos")})
+		controls.HudSort = b:CreateDropdown({Name = "排序方式", List = {"字数", "字母"}, Default = theme.HudSort, Callback = set("HudSort")})
+		controls.HudColor = b:CreateDropdown({Name = "颜色模式", List = {"主题", "彩虹", "自定义"}, Default = theme.HudColor, Callback = set("HudColor")})
+		controls.HudColorPicker = b:CreateColorPicker({
+			Name = "自定义颜色",
+			NoRainbow = true,
+			ThemeKey = "HudHex",
+			Default = Color3.fromHex(theme.HudHex),
+			Callback = function(c)
+				theme.HudHex = c:ToHex()
+				self:QueueTheme()
+				self:QueueSave()
+			end
+		})
+		controls.HudSize = b:CreateSlider({Name = "列表大小", Min = 60, Max = 140, Default = theme.HudSize, Step = 5, Suffix = "%", Callback = set("HudSize")})
+		controls.HudBg = b:CreateToggle({Name = "显示背景", Default = theme.HudBg, Callback = set("HudBg")})
+		controls.HudBar = b:CreateToggle({Name = "显示彩条", Default = theme.HudBar, Callback = set("HudBar")})
+	end)
+
+	section("分类自定义", function(b)
+		self.CatControls = {}
+		self.CatDrop = b:CreateDropdown({Name = "选择分类", List = {"（无）"}, Default = "（无）", Callback = function(v)
+			self.CatSel = v
+			self:SyncCatControls()
+		end})
+		self.CatControls.Color = b:CreateTextBox({Name = "分类颜色(十六进制)", Placeholder = "如 ff5577，留空恢复", Callback = function(v)
+			if self.CatSel and not self:SetCatStyle(self.CatSel, "Color", v) then
+				self:Notify("分类", "颜色格式无效", 2, "warning")
+			end
+		end})
+		self.CatControls.Icon = b:CreateTextBox({Name = "分类图标ID", Placeholder = "数字ID，留空用默认", Callback = function(v)
+			if self.CatSel and not self:SetCatStyle(self.CatSel, "Icon", v) then
+				self:Notify("分类", "图标ID只能是数字", 2, "warning")
+			end
+		end})
+		self.CatControls.Width = b:CreateSlider({Name = "分类宽度", Min = 120, Max = 320, Step = 5, Default = theme.PanelW, Callback = function(v)
+			if self.CatSel then
+				self:SetCatStyle(self.CatSel, "Width", v)
+			end
+		end})
+		self.CatControls.Hidden = b:CreateToggle({Name = "隐藏此分类", Default = false, Callback = function(v)
+			if self.CatSel then
+				self:SetCatStyle(self.CatSel, "Hidden", v)
+			end
+		end})
+		b:CreateButton({Name = "分类左移", Callback = function()
+			if self.CatSel then self:MoveCat(self.CatSel, -1) end
+		end})
+		b:CreateButton({Name = "分类右移", Callback = function()
+			if self.CatSel then self:MoveCat(self.CatSel, 1) end
+		end})
+		b:CreateButton({Name = "重置此分类", Callback = function()
+			local cat = self.CatSel and self:FindCategory(self.CatSel)
+			if cat then
+				cat.ColorHex = nil
+				cat.WidthOverride = nil
+				cat.IconId = nil
+				cat.Hidden = false
+				cat:ApplyStyle()
+				self:ApplyTheme()
+				self:SyncCatControls()
+				self:QueueSave()
+			end
+		end})
+		b:CreateButton({Name = "显示全部分类", Callback = function()
+			self:ShowAllCategories()
+		end})
+		local newCatBox = b:CreateTextBox({Name = "自定义分类名称", Placeholder = "最多 10 个字"})
+		b:CreateButton({Name = "新建分类", Callback = function()
+			local cat, err = self:CreateCustomCategory(newCatBox.Value)
+			if cat then
+				self.CatSel = cat.Name
+				self:RefreshCatList()
+				self:Notify("分类", "已新建：" .. cat.Name, 1.6, "info")
+			else
+				self:Notify("分类", err, 2, "warning")
+			end
+		end})
+		b:CreateButton({Name = "重命名所选分类（仅自定义）", Callback = function()
+			local ok, err = self:RenameCustomCategory(self.CatSel, newCatBox.Value)
+			if not ok then
+				self:Notify("分类", err, 2, "warning")
+			end
+		end})
+		b:CreateButton({Name = "删除所选分类（仅自定义）", Callback = function()
+			if self.CatSel and self:DeleteCustomCategory(self.CatSel) then
+				self:Notify("分类", "已删除，功能已回到原位置", 1.8, "info")
+			else
+				self:Notify("分类", "只能删除自定义分类", 2, "warning")
+			end
+		end})
+		self.EditToggle = b:CreateToggle({Name = "布局编辑模式", Default = false, Callback = function(v)
+			self:SetEditMode(v)
+		end})
+		self:RefreshCatList()
+	end)
+
+	section("功能自定义", function(b)
+		self.ModControls = {}
+		self.ModDrop = b:CreateDropdown({Name = "选择功能", List = {"（无）"}, Default = "（无）", Callback = function(v)
+			self.ModSel = v
+			self:SyncModControls()
+		end})
+		self.ModControls.Name = b:CreateTextBox({Name = "显示名称", Placeholder = "留空使用原名", Callback = function(v)
+			if self.ModSel then
+				self:SetModCustom(self.ModSel, "Name", v)
+			end
+		end})
+		self.ModControls.Color = b:CreateTextBox({Name = "功能颜色(十六进制)", Placeholder = "留空使用主题色", Callback = function(v)
+			if self.ModSel and self.ModulesByKey[self.ModSel] and not self:SetModCustom(self.ModSel, "Color", v) then
+				self:Notify("功能", "颜色格式无效", 2, "warning")
+			end
+		end})
+		self.ModControls.Icon = b:CreateTextBox({Name = "功能图标ID", Placeholder = "数字ID，留空不显示", Callback = function(v)
+			if self.ModSel and self.ModulesByKey[self.ModSel] and not self:SetModCustom(self.ModSel, "Icon", v) then
+				self:Notify("功能", "图标ID只能是数字", 2, "warning")
+			end
+		end})
+		self.ModControls.Pin = b:CreateToggle({Name = "置顶", Default = false, Callback = function(v)
+			if self.ModSel then
+				self:SetModCustom(self.ModSel, "Pin", v)
+			end
+		end})
+		self.ModControls.Hidden = b:CreateToggle({Name = "隐藏此功能", Default = false, Callback = function(v)
+			if self.ModSel then
+				self:SetModCustom(self.ModSel, "Hidden", v)
+			end
+		end})
+		self.MoveDrop = b:CreateDropdown({Name = "移动到分类", List = {"（原位置）"}, Default = "（原位置）", Callback = function(v)
+			self.MoveSel = v
+		end})
+		b:CreateButton({Name = "移动所选功能到该分类", Callback = function()
+			if self.ModSel and self:MoveModule(self.ModSel, self.MoveSel) then
+				self:Notify("功能", "已移动", 1.4, "info")
+			end
+		end})
+		b:CreateButton({Name = "重置此功能", Callback = function()
+			if self.ModSel then
+				self:ResetModCustom(self.ModSel)
+				self:SyncModControls()
+				self:QueueSave()
+			end
+		end})
+		b:CreateButton({Name = "显示全部功能", Callback = function()
+			self:ShowAllModules()
+		end})
+		self:RefreshModList()
+		self:RefreshCatList()
+	end)
+
+	section("自由布局", function(b)
+		self.FreeToggle = b:CreateToggle({Name = "自由拖动面板（拖标题栏）", Default = theme.FreeLayout, Callback = function(v)
+			self:SetFreeLayout(v)
+		end})
+		b:CreateButton({Name = "重置面板位置", Callback = function()
+			self:ResetFreePositions()
+		end})
+	end)
+
+	section("我的主题", function(b)
+		local function themeList()
+			local list = self:ListThemes()
+			if #list == 0 then
+				list = {"（无）"}
+			end
+			return list
+		end
+		local themeName = b:CreateTextBox({Name = "主题名称", Placeholder = "输入名称后点保存"})
+		local themeDrop = b:CreateDropdown({Name = "已保存主题", List = themeList(), Default = themeList()[1], Callback = function(v)
+			self.ThemeSel = v
+		end})
+		local function refreshThemes(select)
+			local list = themeList()
+			themeDrop:SetList(list)
+			self.ThemeSel = select or (table.find(list, self.ThemeSel) and self.ThemeSel) or list[1]
+			themeDrop:SetValue(self.ThemeSel, true)
+		end
+		b:CreateButton({Name = "保存当前为我的主题", Callback = function()
+			local ok, name = self:SaveTheme(themeName.Value)
+			if ok then
+				refreshThemes(name)
+			end
+		end})
+		b:CreateButton({Name = "应用所选主题", Callback = function()
+			self:LoadTheme(self.ThemeSel or themeDrop.Value)
+		end})
+		b:CreateButton({Name = "删除所选主题", Callback = function()
+			self:DeleteTheme(self.ThemeSel or themeDrop.Value)
+			refreshThemes()
+		end})
+	end)
+
+	section("配置", function(b)
+		local configDrop = b:CreateDropdown({
+			Name = "选择配置",
+			List = self:ListConfigs(),
+			Default = self.Meta.Config,
+			Callback = function(v)
+				self.Meta.Config = v
+				self:SaveMeta()
+			end
+		})
+		local nameBox = b:CreateTextBox({Name = "新配置名称", Placeholder = "输入名称后点另存为"})
+		local function refreshList()
+			configDrop:SetList(self:ListConfigs())
+			configDrop:SetValue(self.Meta.Config, true)
+		end
+		b:CreateButton({Name = "保存到所选配置", Callback = function()
+			self:SaveConfig(configDrop.Value)
+			refreshList()
+		end})
+		b:CreateButton({Name = "另存为新配置", Callback = function()
+			if nameBox.Value == "" then
+				self:Notify("配置", "请先输入配置名称", 2, "warning")
+				return
+			end
+			self:SaveConfig(nameBox.Value)
+			refreshList()
+		end})
+		b:CreateButton({Name = "加载所选配置", Callback = function()
+			self:LoadConfig(configDrop.Value)
+		end})
+		b:CreateButton({Name = "删除所选配置", Callback = function()
+			self:DeleteConfig(configDrop.Value)
+			refreshList()
+		end})
+		b:CreateToggle({Name = "自动保存", Default = self.Meta.AutoSave, Callback = function(v)
+			self.Meta.AutoSave = v
+			self:SaveMeta()
+		end})
+		b:CreateToggle({Name = "启动时自动加载", Default = self.Meta.AutoLoad, Callback = function(v)
+			self.Meta.AutoLoad = v
+			self:SaveMeta()
+		end})
+		b:CreateToggle({Name = "进入游戏自动切换配置", Default = self.Meta.AutoBind, Callback = function(v)
+			self.Meta.AutoBind = v
+			self:SaveMeta()
+		end})
+		b:CreateButton({Name = "把当前游戏绑定到所选配置", Callback = function()
+			self.Meta.Binds[tostring(game.PlaceId)] = configDrop.Value
+			self:SaveMeta()
+			self:Notify("配置", "本游戏将自动使用：" .. configDrop.Value, 2, "info")
+		end})
+		b:CreateButton({Name = "取消当前游戏的绑定", Callback = function()
+			self.Meta.Binds[tostring(game.PlaceId)] = nil
+			self:SaveMeta()
+			self:Notify("配置", "已取消绑定", 1.6, "info")
+		end})
+		b:CreateButton({Name = "只加载所选配置的外观", Callback = function()
+			self:LoadConfig(configDrop.Value, false, "外观")
+		end})
+		b:CreateButton({Name = "只加载所选配置的功能状态", Callback = function()
+			self:LoadConfig(configDrop.Value, false, "功能")
+		end})
+		local backupDrop = b:CreateDropdown({Name = "备份版本", List = {"备份 1（最新）", "备份 2", "备份 3"}, Default = "备份 1（最新）", Callback = function() end})
+		b:CreateButton({Name = "回滚到所选备份", Callback = function()
+			local index = tonumber(string.match(backupDrop.Value, "%d")) or 1
+			self:RestoreBackup(configDrop.Value, index)
+		end})
+
+		local allBox = b:CreateTextBox({Name = "整套配置代码", Placeholder = "导出后复制，或粘贴后导入"})
+		b:CreateButton({Name = "导出整套配置", Callback = function()
+			local code = self:ExportAll()
+			allBox:SetValue(code, true)
+			if setclipboard then
+				pcall(setclipboard, code)
+				self:Notify("配置", "已导出并复制到剪贴板", 1.8, "info")
+			else
+				self:Notify("配置", "已导出到上方输入框", 1.8, "info")
+			end
+		end})
+		b:CreateButton({Name = "导入整套配置", Callback = function()
+			if self:ImportAll(allBox.Value) then
+				self:Notify("配置", "导入成功", 1.6, "info")
+			else
+				self:Notify("配置", "配置代码无效", 2, "warning")
+			end
+		end})
+	end)
+
+	section("自动化", function(b)
+		local function themeNames()
+			local list = self:ListThemes()
+			if #list == 0 then
+				list = {"（无）"}
+			end
+			return list
+		end
+		local function pick(list, value)
+			return table.find(list, value) and value or list[1]
+		end
+		local function recheck()
+			self.TimeApplied = nil
+			self:SaveMeta()
+			self:CheckTimeTheme()
+		end
+		local names = themeNames()
+		b:CreateToggle({Name = "昼夜自动切换主题", Default = self.Meta.TimeSwitch, Callback = function(v)
+			self.Meta.TimeSwitch = v
+			recheck()
+		end})
+		local dayDrop = b:CreateDropdown({Name = "白天主题", List = names, Default = pick(names, self.Meta.DayTheme), Callback = function(v)
+			self.Meta.DayTheme = v
+			recheck()
+		end})
+		local nightDrop = b:CreateDropdown({Name = "夜间主题", List = names, Default = pick(names, self.Meta.NightTheme), Callback = function(v)
+			self.Meta.NightTheme = v
+			recheck()
+		end})
+		b:CreateSlider({Name = "夜间开始（时）", Min = 0, Max = 23, Step = 1, Default = self.Meta.NightFrom, Callback = function(v)
+			self.Meta.NightFrom = v
+			recheck()
+		end})
+		b:CreateSlider({Name = "夜间结束（时）", Min = 0, Max = 23, Step = 1, Default = self.Meta.NightTo, Callback = function(v)
+			self.Meta.NightTo = v
+			recheck()
+		end})
+		b:CreateButton({Name = "刷新主题列表", Callback = function()
+			local list = themeNames()
+			dayDrop:SetList(list)
+			nightDrop:SetList(list)
+			dayDrop:SetValue(pick(list, self.Meta.DayTheme), true)
+			nightDrop:SetValue(pick(list, self.Meta.NightTheme), true)
+		end})
+		b:CreateButton({Name = "再次显示新手提示", Callback = function()
+			self.Meta.Onboarded = false
+			self:SaveMeta()
+			self:Notify("提示", "下次打开界面时会再显示", 1.8, "info")
+		end})
+	end)
+
+	section("其他", function(b)
+		local resetAt = 0
+		b:CreateButton({Name = "一键恢复初始设置", Callback = function()
+			local now = os.clock()
+			if now - resetAt < 3 then
+				resetAt = 0
+				self:ResetAll()
+				self:Notify("设置", "已恢复初始设置", 2, "info")
+			else
+				resetAt = now
+				self:Notify("设置", "3 秒内再点一次确认：将重置外观、分类自定义并清除快捷按钮", 3, "warning")
+			end
+		end})
+		b:CreateButton({Name = "清除所有快捷按钮", Callback = function()
+			for key in table.clone(self.Quicks) do
+				local module = self.ModulesByKey[key]
+				if module then
+					self:RemoveQuick(module, true)
+				end
+			end
+			self:QueueSave()
+			self:Notify("快捷按钮", "已清除全部", 1.4, "info")
+		end})
+		b:CreateButton({Name = "恢复默认外观", Callback = function()
+			for k, v in DefaultTheme do
+				theme[k] = v
+			end
+			self:SyncControls()
+			self:ApplyTheme()
+			self:QueueSave()
+		end})
+	end)
+
+	padding(category.Body, 0, 0, 0, 6)
+end
+
+function Library:CreateCategory(settings)
+	local window = self
+	local category = {
+		Name = settings.Name,
+		Collapsed = false,
+		Modules = {},
+		Index = #self.Categories + 1,
+		Floating = settings.Floating,
+		Hidden = false
+	}
+	category.Order = category.Index
+	category.PIndex = settings.PaletteIndex or category.Index
+	local function curWidth()
+		return settings.Width or category.WidthOverride or window.Theme.PanelW
+	end
+
+	local function P()
+		local base = window:Palette(category.PIndex)
+		local hex = category.ColorHex
+		if not hex then
+			return base
+		end
+		if category.PalBase == base and category.PalHex == hex and category.PalMix == window.Theme.TintMix then
+			return category.PalCache
+		end
+		local ok, c = pcall(Color3.fromHex, hex)
+		if not ok then
+			return base
+		end
+		local mix = math.clamp(window.Theme.TintMix / 100, 0.35, 1)
+		local p = {}
+		for k, v in base do
+			p[k] = v
+		end
+		p.RowOn = base.RowOn:Lerp(c, mix)
+		p.Fill = base.Fill:Lerp(c, mix)
+		p.Rim1 = base.Rim1:Lerp(c, math.clamp(mix * 1.6, 0, 1))
+		p.OnText = luminance(p.RowOn) > 0.55 and Color3.fromRGB(10, 10, 12) or Color3.fromRGB(244, 244, 248)
+		p.Accent = p.Fill
+		p.Tinted = true
+		p.TintColor = c
+		category.PalBase, category.PalHex, category.PalMix, category.PalCache = base, hex, window.Theme.TintMix, p
+		return p
+	end
+
+	category.GetPal = P
+
+	local holder = create("Frame", {
+		Name = settings.Name,
+		Size = UDim2.fromOffset(curWidth(), 36),
+		BackgroundTransparency = 1,
+		LayoutOrder = category.Index
+	}, settings.Floating and self.Root or self.Scroller)
+	if settings.Floating then
+		holder.Position = settings.Position or UDim2.new(0.5, -curWidth() / 2, 0, 56)
+		holder.Visible = false
+	end
+	category.Holder = holder
+	if settings.Floating then
+		holder.ZIndex = 1000
+	end
+
+	local shadow = create("ImageLabel", {
+		Size = UDim2.new(1, 89, 1, 52),
+		Position = UDim2.fromOffset(-48, -31),
+		BackgroundTransparency = 1,
+		Image = Assets.Shadow,
+		ImageColor3 = B,
+		ImageTransparency = 0.25,
+		ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(52, 31, 261, 502),
+		ZIndex = 0
+	}, holder)
+
+	local panel = create("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BorderSizePixel = 0,
+		ClipsDescendants = true
+	}, holder)
+	local panelStyle, panelStroke = makeGlass(panel, 8)
+	local glow = create("Frame", {
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 6
+	}, panel)
+	local rings = {}
+	for i, d in {170, 130, 95, 64, 36} do
+		local ring = create("Frame", {
+			Size = UDim2.fromOffset(d, d),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(0, 0),
+			BackgroundColor3 = W,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ZIndex = 6
+		}, glow)
+		corner(ring, 999)
+		rings[i] = ring
+	end
+	category.Glow = glow
+	category.GlowRings = rings
+	category.GlowOn = false
+
+	local header
+	header = create("TextButton", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundColor3 = W,
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 2
+	}, panel)
+	local headGrad = create("UIGradient", {Rotation = 90}, header)
+	local icon = create("ImageLabel", {
+		Size = UDim2.fromOffset(16, 16),
+		Position = UDim2.fromOffset(12, 10),
+		BackgroundTransparency = 1,
+		Image = settings.Icon or "",
+		Visible = settings.Icon ~= nil,
+		ZIndex = 3
+	}, header)
+	local title = create("TextLabel", {
+		Size = UDim2.new(1, -70, 1, 0),
+		Position = UDim2.fromOffset(settings.Icon and 36 or 14, 0),
+		BackgroundTransparency = 1,
+		Text = settings.Name,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 18,
+		Font = T.FontBold,
+		ZIndex = 3
+	}, header)
+	local arrow = create("ImageLabel", {
+		Size = UDim2.fromOffset(10, 5),
+		Position = UDim2.new(1, -26, 0.5, -3),
+		BackgroundTransparency = 1,
+		Image = Assets.ExpandUp,
+		ZIndex = 3
+	}, header)
+	create("Frame", {
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = W,
+		BackgroundTransparency = 0.8,
+		BorderSizePixel = 0,
+		ZIndex = 4
+	}, header)
+	local bottomLine = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 1),
+		Position = UDim2.new(0, 0, 1, -1),
+		BorderSizePixel = 0,
+		BackgroundTransparency = 0.6,
+		ZIndex = 4
+	}, header)
+
+	local editBar = create("Frame", {
+		Size = UDim2.fromOffset(78, 22),
+		Position = UDim2.new(1, -84, 0.5, -11),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 7
+	}, header)
+	create("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, editBar)
+	local editButtons = {}
+	for i, def in {{"‹", -1}, {"›", 1}, {"隐", 0}} do
+		local eb = create("TextButton", {
+			Size = UDim2.fromOffset(22, 22),
+			BackgroundColor3 = W,
+			BackgroundTransparency = 0.1,
+			BorderSizePixel = 0,
+			Text = def[1],
+			TextSize = 14,
+			Font = T.FontBold,
+			AutoButtonColor = false,
+			LayoutOrder = i,
+			ZIndex = 8
+		}, editBar)
+		corner(eb, 6)
+		eb.MouseButton1Click:Connect(function()
+			if def[2] == 0 then
+				window:SetCatStyle(category.Name, "Hidden", true)
+				window:SyncCatControls()
+			else
+				window:MoveCat(category.Name, def[2])
+			end
+		end)
+		editButtons[i] = eb
+	end
+	category.EditBar = editBar
+
+	function category:ApplyIcon()
+		local id = category.IconId
+		local img = id and ("rbxassetid://" .. id) or settings.Icon
+		icon.Image = img or ""
+		icon.Visible = img ~= nil
+		title.Position = UDim2.fromOffset(img and 36 or 14, 0)
+	end
+
+	local body = create("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -36),
+		Position = UDim2.fromOffset(0, 36),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 2,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ElasticBehavior = Enum.ElasticBehavior.Never
+	}, panel)
+	local layout = create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, body)
+	category.Body = body
+	category.Panel = panel
+	category.TitleLabel = title
+
+	self:Reg(function()
+		local p = P()
+		local th = window.Theme
+		local perf = th.Perf
+		panelStyle(window, p, p.Bg)
+		local ps = th.PanelStyle
+		if ps == "实心" then
+			panel.BackgroundTransparency = 0
+		elseif ps == "轻描边" then
+			panel.BackgroundTransparency = math.clamp(th.Transparency + 0.5, 0, 0.92)
+			panelStroke.Transparency = 0
+			panelStroke.Thickness = math.max(th.StrokeW, 1.5)
+		end
+		headGrad.Color = th.GradMode == "双色渐变" and sheen(p.Head, th.Gloss / 100, th.GradPos / 100) or gradSeq(p.Head, th)
+		headGrad.Rotation = th.GradAngle
+		headGrad.Enabled = not perf
+		header.BackgroundColor3 = perf and p.Head or W
+		header.BackgroundTransparency = math.clamp(th.Transparency - 0.05, 0, 1)
+		title.TextColor3 = p.HeadText
+		title.TextSize = th.FontSize + 2
+		textShadow(title, th)
+		body.ScrollBarThickness = th.BarThick
+		layout.Padding = UDim.new(0, th.RowGap)
+		arrow.ImageColor3 = p.HeadSub
+		if icon then
+			icon.ImageColor3 = p.HeadText
+		end
+		bottomLine.BackgroundColor3 = p.Tinted and p.Accent or p.Rim2
+		for _, eb in editButtons do
+			eb.BackgroundColor3 = p.Fill
+			eb.TextColor3 = p.OnText
+		end
+		body.ScrollBarImageColor3 = p.Fill
+		shadow.Visible = not perf
+		shadow.ImageTransparency = 1 - (th.Shadow / 100) * (p == window.Pals.Light and 0.6 or 0.75)
+		local gc = p.TintColor or W
+		for _, ring in rings do
+			ring.BackgroundColor3 = gc
+		end
+		if category.GlowOn and (not th.TouchGlow or perf) then
+			category.GlowOn = false
+			glow.Visible = false
+		end
+	end)
+
+	local function resize()
+		local s = window.Scale.Scale
+		local maxHeight = math.max(window.Root.AbsoluteSize.Y / s - 130, 120)
+		local content = layout.AbsoluteContentSize.Y / s
+		local target = category.Collapsed and 0 or math.min(content, maxHeight)
+		local goal = UDim2.fromOffset(curWidth(), 36 + target)
+		if animEnabled and window.IsReady then
+			tween(holder, {Size = goal}, 0.18)
+		else
+			holder.Size = goal
+		end
+	end
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resize)
+	self.Root:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
+	self.Scale:GetPropertyChangedSignal("Scale"):Connect(resize)
+	task.defer(resize)
+	self:Reg(function()
+		resize()
+	end)
+
+	category.Resize = resize
+	category.Header = header
+
+	function category:SetFree(state)
+		if settings.Floating then return end
+		if state then
+			if not category.FreePos then
+				local s = window.Scale.Scale
+				local ap = holder.AbsolutePosition
+				local rp = window.Root.AbsolutePosition
+				category.FreePos = {X = (ap.X - rp.X) / s, Y = (ap.Y - rp.Y) / s}
+			end
+			category.Free = true
+			holder.Parent = window.Root
+			holder.Position = UDim2.fromOffset(category.FreePos.X, category.FreePos.Y)
+		else
+			category.Free = false
+			holder.Parent = window.Scroller
+			holder.Position = UDim2.fromOffset(0, 0)
+			holder.ZIndex = 1
+		end
+	end
+
+	function category:ApplyStyle()
+		category:ApplyIcon()
+		holder.LayoutOrder = category.Order
+		if not settings.Floating then
+			holder.Visible = not category.Hidden
+		end
+		resize()
+	end
+
+	function category:PlayEntrance(delay)
+		panel.Position = UDim2.fromOffset(0, 30)
+		shadow.Position = UDim2.fromOffset(-48, -1)
+		task.delay(delay, function()
+			tween(panel, {Position = UDim2.fromOffset(0, 0)}, 0.32)
+			tween(shadow, {Position = UDim2.fromOffset(-48, -31)}, 0.32)
+		end)
+	end
+
+	function category:SetCollapsed(state)
+		self.Collapsed = state
+		tween(arrow, {Rotation = state and 180 or 0}, 0.18)
+		resize()
+	end
+
+	local function collapse()
+		category:SetCollapsed(not category.Collapsed)
+		window:QueueSave()
+	end
+	if settings.Floating then
+		self:MakeDraggable(header, holder, {
+			OnTap = collapse,
+			GetScale = function()
+				return window.Scale.Scale
+			end
+		})
+	else
+		self:MakeDraggable(header, holder, {
+			OnTap = collapse,
+			GetScale = function()
+				return window.Scale.Scale
+			end,
+			CanMove = function()
+				return category.Free == true
+			end,
+			OnDown = function()
+				if category.Free then
+					window:RaiseCat(category)
+				end
+			end,
+			OnMoved = function()
+				if category.Free then
+					window:ClampCat(category)
+					window:QueueSave()
+				end
+			end
+		})
+	end
+
+	function category:CreateModule(modSettings)
+		local module = {
+			Name = modSettings.Name,
+			Enabled = false,
+			Options = {},
+			Category = category.Name,
+			Key = category.Name .. "/" .. modSettings.Name,
+			ExtraText = modSettings.ExtraText,
+			Index = #category.Modules + 1,
+			Hidden = false,
+			Pinned = false
+		}
+		local homePalette = P
+		local function P()
+			if module.Host then
+				return module.Host.GetPal()
+			end
+			return homePalette()
+		end
+
+		local container = create("Frame", {
+			Name = modSettings.Name,
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			LayoutOrder = #category.Modules + 1
+		}, body)
+		create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, container)
+		module.Container = container
+
+		local row = create("TextButton", {
+			Size = UDim2.new(1, 0, 0, 34),
+			BackgroundColor3 = W,
+			BorderSizePixel = 0,
+			Text = "",
+			AutoButtonColor = false,
+			ClipsDescendants = true,
+			LayoutOrder = 1
+		}, container)
+		local rowGrad = create("UIGradient", {Rotation = 90, Enabled = false}, row)
+		local rowStroke = create("UIStroke", {Thickness = 1.5, Enabled = false, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, row)
+		local leftBar = create("Frame", {
+			Size = UDim2.new(0, 3, 1, -8),
+			Position = UDim2.new(0, 0, 0, 4),
+			BorderSizePixel = 0,
+			Visible = false,
+			ZIndex = 2
+		}, row)
+		local shine = create("Frame", {
+			Size = UDim2.new(0.3, 0, 1.8, 0),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(-0.4, 0, 0.5, 0),
+			BackgroundColor3 = W,
+			BorderSizePixel = 0,
+			Rotation = 18,
+			Visible = false,
+			ZIndex = 2
+		}, row)
+		create("UIGradient", {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.5, 0.8),
+				NumberSequenceKeypoint.new(1, 1)
+			})
+		}, shine)
+		module.Shine = shine
+		module.ShineOffset = (#window.Modules * 0.37) % 2.2
+		local label = create("TextLabel", {
+			Size = UDim2.new(1, -50, 1, 0),
+			Position = UDim2.new(0, 14, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			BackgroundTransparency = 1,
+			Text = modSettings.Name,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextSize = 16,
+			Font = T.Font,
+			TextTruncate = Enum.TextTruncate.AtEnd
+		}, row)
+		local labelScale = create("UIScale", {Scale = 1}, label)
+		local rowIcon = create("ImageLabel", {
+			Size = UDim2.fromOffset(16, 16),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 12, 0.5, 0),
+			BackgroundTransparency = 1,
+			Visible = false,
+			ZIndex = 3
+		}, row)
+		local expand = create("TextButton", {
+			Size = UDim2.fromOffset(34, 34),
+			Position = UDim2.new(1, -36, 0, 0),
+			BackgroundTransparency = 1,
+			Text = "",
+			Visible = false,
+			ZIndex = 3
+		}, row)
+		local dots = create("ImageLabel", {
+			Size = UDim2.fromOffset(3, 16),
+			Position = UDim2.new(0.5, -1, 0.5, -8),
+			BackgroundTransparency = 1,
+			Image = Assets.Dots,
+			ZIndex = 3
+		}, expand)
+
+		local settingsClip = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			LayoutOrder = 2
+		}, container)
+		module.SettingsClip = settingsClip
+		local settingsFrame = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BorderSizePixel = 0
+		}, settingsClip)
+		create("UIListLayout", {SortOrder = Enum.SortOrder.LayoutOrder}, settingsFrame)
+		padding(settingsFrame, 0, 0, 2, 6)
+
+		local callback = modSettings.Callback or modSettings.Function or function() end
+		for _, other in modSettings.Conflicts or {} do
+			window:AddConflict(module.Key, other)
+		end
+
+		local function refresh(animate)
+			local p = P()
+			local th = window.Theme
+			local on = module.Enabled
+			local style = th.EnabledStyle
+			local perf = th.Perf
+			local custom = module.ColorC
+			local rainbow = th.AccentRainbow and not perf and not custom
+			local filled = on and (style == "渐变填充" or style == "纯色填充")
+			local glossy = filled and style == "渐变填充" and not perf
+			local accent = custom or p.RowOn
+			local spec = on and not custom and not rainbow and th.EnabledColor ~= "主题色"
+			if on and rainbow then
+				accent = Color3.fromHSV(window.Hue, 0.55, 1)
+			elseif spec then
+				accent = window:SpectrumColor(row, module)
+			end
+			rowGrad.Color = sheen(accent, th.Gloss / 100)
+			rowGrad.Enabled = glossy
+			row.Size = UDim2.new(1, 0, 0, th.RowH)
+			expand.Size = UDim2.fromOffset(34, th.RowH)
+			local bg, bgT
+			if filled then
+				bg = glossy and W or accent
+				bgT = 0
+			else
+				bg = p.Row
+				bgT = math.clamp(th.Transparency + (on and 0.15 or 0.3), 0, 1)
+			end
+			local textColor
+			if filled then
+				textColor = rainbow and DARK.OnText or (spec and (luminance(accent) > 0.55 and DARK.OnText or LIGHT.OnText)) or (custom and (luminance(custom) > 0.55 and DARK.OnText or LIGHT.OnText) or p.OnText)
+			else
+				textColor = on and p.Text or p.Sub
+			end
+			local hasIcon = module.IconId ~= nil
+			rowIcon.Visible = hasIcon
+			if hasIcon then
+				rowIcon.Image = "rbxassetid://" .. module.IconId
+				rowIcon.ImageColor3 = textColor
+			end
+			label.Position = UDim2.new(0, hasIcon and 34 or 14, 0.5, 0)
+			label.Size = UDim2.new(1, hasIcon and -70 or -50, 1, 0)
+			apply(row, {BackgroundColor3 = bg, BackgroundTransparency = bgT}, animate)
+			apply(label, {TextColor3 = textColor}, animate)
+			apply(dots, {ImageColor3 = textColor}, animate)
+			label.Font = on and T.FontBold or T.Font
+			label.TextSize = th.FontSize
+			textShadow(label, th)
+			local ac = custom or ((on and (rainbow or spec)) and accent or p.Accent)
+			leftBar.Visible = on and style == "左侧光条"
+			leftBar.BackgroundColor3 = ac
+			rowStroke.Enabled = on and style == "发光描边"
+			rowStroke.Color = ac
+			shine.Visible = on and th.Shimmer and not perf
+			settingsFrame.BackgroundColor3 = p.Set
+			settingsFrame.BackgroundTransparency = 0.25
+		end
+		window:Reg(refresh)
+		module.Refresh = refresh
+		row:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+			if module.Enabled and window.Theme.EnabledColor ~= "主题色" and not module.RecolorPending then
+				module.RecolorPending = true
+				task.delay(0.12, function()
+					module.RecolorPending = false
+					if module.Enabled and not window.Destroyed then
+						refresh(false)
+					end
+				end)
+			end
+		end)
+
+		function module:ApplyCustom()
+			label.Text = self.Display or self.Name
+			container.LayoutOrder = self.Pinned and (self.Index - 1000) or self.Index
+			refresh(false)
+		end
+
+		function module:Toggle(state, silent)
+			if state == nil then
+				state = not self.Enabled
+			end
+			if state and not silent and not self.Enabled then
+				for _, other in window.Conflicts[self.Key] or {} do
+					local m2 = window.ModulesByKey[other]
+					if m2 and m2.Enabled then
+						m2:Toggle(false, true)
+						window:Notify("冲突", m2.Name .. " 与 " .. self.Name .. " 冲突，已自动关闭", 2.4, "warning")
+					end
+				end
+			end
+			self.Enabled = state
+			refresh(true)
+			local quick = window.Quicks[self.Key]
+			if quick then
+				quick.Refresh(true)
+			end
+			window:HudUpdate(self)
+			if window.Filter ~= "全部" then
+				window:RefreshFilter()
+			end
+			local px = self.PressX
+			self.PressX = nil
+			if not silent then
+				local p = P()
+				window:PushRecent(module.Key)
+				window:Click()
+				window:Wave(row, px, state and (module.ColorC or p.Fill) or p.Text)
+				window:Notify(modSettings.Name, state and "已开启" or "已关闭", 1.2, state and "info" or "warning")
+				window:QueueSave()
+			end
+			window:Safe(modSettings.Name, callback, state)
+		end
+
+		window:MakeDraggable(row, row, {
+			NoMove = true,
+			HoldTime = 0.7,
+			OnDown = function(input)
+				local p = P()
+				module.PressX = (input.Position.X - row.AbsolutePosition.X) / window.Scale.Scale
+				window:Ripple(row, input, module.Enabled and p.OnText or p.Text)
+				if window.Theme.Ripple and not window.Theme.Perf then
+					tween(labelScale, {Scale = 0.95}, 0.08)
+				end
+			end,
+			OnUp = function()
+				tween(labelScale, {Scale = 1}, 0.16)
+			end,
+			OnTap = function()
+				module:Toggle()
+			end,
+			OnHold = function()
+				window:BeginPlace(module)
+			end
+		})
+
+		local settingsOpen = false
+		local function settingsHeight()
+			return settingsFrame.AbsoluteSize.Y / window.Scale.Scale
+		end
+		function module:SetSettingsOpen(state)
+			settingsOpen = state
+			tween(dots, {Rotation = state and 90 or 0}, 0.18)
+			apply(settingsClip, {Size = UDim2.new(1, 0, 0, state and settingsHeight() or 0)}, true)
+			task.delay(0.24, function()
+				if settingsOpen then
+					settingsClip.Size = UDim2.new(1, 0, 0, settingsHeight())
+				end
+			end)
+		end
+		settingsFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			if settingsOpen then
+				settingsClip.Size = UDim2.new(1, 0, 0, settingsHeight())
+			end
+		end)
+		expand.MouseButton1Click:Connect(function()
+			module:SetSettingsOpen(not settingsOpen)
+		end)
+
+		local b = Builder(window, settingsFrame, P, module.Options, function()
+			expand.Visible = true
+		end, function()
+			if module.Enabled then
+				window:RefreshHud()
+			end
+			window:QueueSave()
+		end)
+		for _, name in {"CreateToggle", "CreateSlider", "CreateDropdown", "CreateTextBox", "CreateButton", "CreateColorPicker", "CreateDivider"} do
+			module[name] = function(_, s)
+				return b[name](b, s)
+			end
+		end
+
+		module.Object = row
+		table.insert(category.Modules, module)
+		table.insert(window.Modules, module)
+		window.ModulesByKey[module.Key] = module
+		if window.IsReady then
+			window:RefreshModList()
+		end
+
+		if modSettings.Default then
+			module:Toggle(true, true)
+		end
+
+		return module
+	end
+
+	table.insert(self.Categories, category)
+	self:RefreshCatList()
+	return category
+end
+
+local UI = {
+	Version = Library.Version,
+	Icons = Assets,
+	Window = nil
+}
+
+function UI:CreateWindow(options)
+	if self ~= UI then
+		options = self
+	end
+	options = options or {}
+	local current = UI.Window
+	if current and not current.Destroyed then
+		pcall(function()
+			current:Destroy()
+		end)
+	end
+	UI.Window = nil
+	if options.Folder then
+		Library.Folder = options.Folder
+	end
+	local window = Library.new(options)
+	UI.Window = window
+	task.defer(function()
+		if not window.Destroyed and not window.IsReady then
+			window:Ready()
+		end
+	end)
+	return window
+end
+
+UI.new = UI.CreateWindow
+
+function UI:GetWindow()
+	local window = UI.Window
+	if window and not window.Destroyed then
+		return window
+	end
+	return nil
+end
+
+function UI:SetVisible(state)
+	local window = UI:GetWindow()
+	if window then
+		window:SetVisible(state)
+	end
+end
+
+function UI:Toggle()
+	local window = UI:GetWindow()
+	if window then
+		window:SetVisible(not window.Visible)
+	end
+end
+
+function UI:Destroy()
+	local window = UI.Window
+	UI.Window = nil
+	if window and not window.Destroyed then
+		pcall(function()
+			window:Destroy()
+		end)
+	end
+	if env.__CLICKGUI_LIB == UI then
+		env.__CLICKGUI_LIB = nil
+	end
+end
+
+env.__CLICKGUI_LIB = UI
+
+return UI
