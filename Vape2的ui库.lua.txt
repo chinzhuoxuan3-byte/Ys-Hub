@@ -26,7 +26,7 @@ end
 
 local Assets = {
 	Vape = "rbxassetid://14373395239",
-	Cat = "rbxassetid://5205790826",
+	Cat = "rbxassetid://109251560",
 	Shadow = "rbxassetid://14898786664",
 	Close = "rbxassetid://14368309446",
 	Search = "rbxassetid://14425646684",
