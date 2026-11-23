@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService")
 
 local env = (getgenv and getgenv()) or _G
 if env.__IMGUI_LIB then
@@ -1794,6 +1795,389 @@ function Container:Avatar(user, size, opts)
 	return obj
 end
 
+function Container:RangeSlider(name, min, max, low, high, callback, opts)
+	opts = opts or {}
+	local win = self.Win
+	local row = self:_row(FH, true)
+	local iw = win.ItemWidth
+	local track = new("TextButton", {
+		BackgroundColor3 = T.Frame[1],
+		BackgroundTransparency = T.Frame[2],
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		Size = UDim2.new(iw, -4, 1, 0)
+	}, row)
+	label(row, name, {Size = UDim2.new(1 - iw, -4, 1, 0), Position = UDim2.new(iw, 4, 0, 0)})
+	local fill = frame(track, {T.Grab[1], 0.6}, {Size = UDim2.new(0, 0, 1, -2), Position = UDim2.new(0, 0, 0, 1)})
+	local gl = frame(track, T.Grab, {Size = UDim2.new(0, GW, 1, -2)})
+	local gh = frame(track, T.Grab, {Size = UDim2.new(0, GW, 1, -2)})
+	local text = label(track, "", {Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
+	local state = {Low = clamp(low or min, min, max), High = clamp(high or max, min, max), Frame = row}
+
+	local function fmt(v)
+		if opts.Format then
+			return string.format(opts.Format, v)
+		end
+		return opts.Int and string.format("%d", v) or string.format("%.2f", v)
+	end
+
+	local function norm(v)
+		if opts.Int then
+			return math.floor(v + 0.5)
+		end
+		return math.floor(v * 1000000 + 0.5) / 1000000
+	end
+
+	local function render()
+		local range = math.max(max - min, 1e-9)
+		local rl = clamp((state.Low - min) / range, 0, 1)
+		local rh = clamp((state.High - min) / range, 0, 1)
+		gl.Position = UDim2.new(rl, -rl * GW, 0, 1)
+		gh.Position = UDim2.new(rh, -rh * GW, 0, 1)
+		fill.Position = UDim2.new(rl, GW / 2, 0, 1)
+		fill.Size = UDim2.new(math.max(rh - rl, 0), 0, 1, -2)
+		text.Text = fmt(state.Low) .. " - " .. fmt(state.High)
+	end
+
+	function state.Set(a, b, fire)
+		a = norm(clamp(a, min, max))
+		b = norm(clamp(b, min, max))
+		if a > b then
+			a, b = b, a
+		end
+		local changed = a ~= state.Low or b ~= state.High
+		state.Low, state.High = a, b
+		render()
+		if fire and changed and callback then
+			task.spawn(callback, a, b)
+		end
+	end
+
+	function state.Get()
+		return state.Low, state.High
+	end
+
+	local function valueAt(x)
+		local scale = win.Scale
+		local abs = track.AbsolutePosition.X
+		local w = track.AbsoluteSize.X
+		local r = clamp((x - abs - GW / 2 * scale) / math.max(w - GW * scale, 1), 0, 1)
+		return min + (max - min) * r
+	end
+
+	track.InputBegan:Connect(function(input)
+		if not isPress(input) then
+			return
+		end
+		local v = valueAt(input.Position.X)
+		local pickLow = math.abs(v - state.Low) < math.abs(v - state.High) or (v <= state.Low)
+		win.Body.ScrollingEnabled = false
+		paint(track, T.FrameActive)
+		local function update(x)
+			local value = valueAt(x)
+			if pickLow then
+				state.Set(math.min(value, state.High), state.High, true)
+			else
+				state.Set(state.Low, math.max(value, state.Low), true)
+			end
+		end
+		update(input.Position.X)
+		beginDrag(input, function(pos)
+			update(pos.X)
+		end, function()
+			paint(track, T.Frame)
+			win.Body.ScrollingEnabled = true
+		end)
+	end)
+	render()
+	return state
+end
+
+function Container:InputVector(name, count, defaults, callback, opts)
+	opts = opts or {}
+	local win = self.Win
+	local row = self:_row(FH, true)
+	local iw = win.ItemWidth
+	local holder = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(iw, -4, 1, 0)}, row)
+	list(holder, 2, true)
+	label(row, name, {Size = UDim2.new(1 - iw, -4, 1, 0), Position = UDim2.new(iw, 4, 0, 0)})
+	local state = {Values = {}, Frame = row}
+	local boxes = {}
+	local function fmt(v)
+		if opts.Int then
+			return string.format("%d", v)
+		end
+		return tostring(math.floor(v * 1000 + 0.5) / 1000)
+	end
+	for i = 1, count do
+		state.Values[i] = (defaults and defaults[i]) or 0
+		local box = new("TextBox", {
+			BackgroundColor3 = T.Frame[1],
+			BackgroundTransparency = T.Frame[2],
+			BorderSizePixel = 0,
+			Size = UDim2.new(1 / count, -2 * (count - 1) / count, 1, 0),
+			Font = FONT,
+			TextSize = TS,
+			TextColor3 = T.Text,
+			Text = fmt(state.Values[i]),
+			ClearTextOnFocus = false,
+			LayoutOrder = i,
+			TextXAlignment = Enum.TextXAlignment.Center
+		}, holder)
+		boxes[i] = box
+		box.Focused:Connect(function()
+			paint(box, T.FrameActive)
+		end)
+		box.FocusLost:Connect(function()
+			paint(box, T.Frame)
+			local n = tonumber(box.Text)
+			if n then
+				if opts.Int then
+					n = math.floor(n + 0.5)
+				end
+				state.Values[i] = n
+				if callback then
+					task.spawn(callback, table.clone(state.Values))
+				end
+			end
+			box.Text = fmt(state.Values[i])
+		end)
+	end
+	function state.Set(values, fire)
+		for i = 1, count do
+			state.Values[i] = values[i] or state.Values[i]
+			boxes[i].Text = fmt(state.Values[i])
+		end
+		if fire and callback then
+			task.spawn(callback, table.clone(state.Values))
+		end
+	end
+	function state.Get()
+		return table.clone(state.Values)
+	end
+	return state
+end
+
+function Container:InputVector2(name, defaults, callback, opts)
+	return self:InputVector(name, 2, defaults, callback, opts)
+end
+
+function Container:InputVector3(name, defaults, callback, opts)
+	return self:InputVector(name, 3, defaults, callback, opts)
+end
+
+local ThumbCache = {}
+
+local function loadThumb(img, userId)
+	if ThumbCache[userId] then
+		img.Image = ThumbCache[userId]
+		return
+	end
+	task.spawn(function()
+		local ok, content = pcall(function()
+			return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+		end)
+		if ok and content then
+			ThumbCache[userId] = content
+			if img.Parent then
+				img.Image = content
+			end
+		end
+	end)
+end
+
+function Container:PlayerCombo(name, callback, opts)
+	opts = opts or {}
+	local win = self.Win
+	local row = self:_row(FH, true)
+	local iw = win.ItemWidth
+	local state = {Value = nil, Frame = row}
+	local box = button(row, T.Frame, {
+		Size = UDim2.new(iw, -4, 1, 0),
+		Text = "选择玩家",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClipsDescendants = true
+	})
+	pad(box, FH + 2, FH, 0, 0)
+	local mini = new("ImageLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(FH - 4, FH - 4),
+		Position = UDim2.fromOffset(-(FH - 2), 2),
+		Visible = false
+	}, box)
+	local arrowBox = frame(box, T.Button, {Size = UDim2.fromOffset(FH, FH), Position = UDim2.new(1, 0, 0, 0)})
+	icon(arrowBox, "Right", {Size = UDim2.fromOffset(FH - 8, FH - 8), Position = UDim2.fromOffset(4, 4), Rotation = 90})
+	label(row, name, {Size = UDim2.new(1 - iw, -4, 1, 0), Position = UDim2.new(iw, 4, 0, 0)})
+	bind(box, T.Frame, T.FrameHover, T.FrameActive)
+
+	local function render()
+		if state.Value then
+			box.Text = state.Value.Name
+			mini.Visible = true
+			loadThumb(mini, state.Value.UserId)
+		else
+			box.Text = "选择玩家"
+			mini.Visible = false
+		end
+	end
+
+	function state.Set(player, fire)
+		state.Value = player
+		render()
+		if fire and callback then
+			task.spawn(callback, player)
+		end
+	end
+	function state.Get()
+		return state.Value
+	end
+
+	table.insert(Library.Conns, Players.PlayerRemoving:Connect(function(plr)
+		if state.Value == plr then
+			state.Set(nil, true)
+		end
+	end))
+
+	box.MouseButton1Click:Connect(function()
+		local players = {}
+		for _, plr in Players:GetPlayers() do
+			if opts.IncludeSelf ~= false or plr ~= Players.LocalPlayer then
+				table.insert(players, plr)
+			end
+		end
+		table.sort(players, function(a, b)
+			return a.Name:lower() < b.Name:lower()
+		end)
+		local visible = math.max(math.min(#players, 7), 1)
+		local height = visible * (FH + 2) + 4
+		win:_popup(box, box.AbsoluteSize.X / win.Scale, height, function(pop)
+			local scroll = new("ScrollingFrame", {
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				Size = UDim2.fromScale(1, 1),
+				CanvasSize = UDim2.new(),
+				AutomaticCanvasSize = Enum.AutomaticSize.Y,
+				ScrollBarThickness = 5,
+				ScrollBarImageColor3 = T.Scroll
+			}, pop)
+			pad(scroll, 2, 2, 2, 2)
+			list(scroll, 0).VerticalAlignment = Enum.VerticalAlignment.Top
+			if #players == 0 then
+				label(scroll, "没有玩家", {Size = UDim2.new(1, 0, 0, FH), TextColor3 = T.TextDisabled})
+			end
+			for i, plr in players do
+				local selected = plr == state.Value
+				local normal = selected and T.Header or T.Clear
+				local b = button(scroll, normal, {
+					Size = UDim2.new(1, 0, 0, FH + 2),
+					Text = plr.Name,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					LayoutOrder = i
+				})
+				pad(b, FH + 6, 4, 0, 0)
+				bind(b, normal, T.HeaderHover, T.HeaderActive)
+				local thumb = new("ImageLabel", {
+					BackgroundTransparency = 1,
+					Size = UDim2.fromOffset(FH - 2, FH - 2),
+					Position = UDim2.fromOffset(-(FH + 2), 1)
+				}, b)
+				loadThumb(thumb, plr.UserId)
+				b.MouseButton1Click:Connect(function()
+					win:_closePopup()
+					state.Set(plr, true)
+				end)
+			end
+		end)
+	end)
+	render()
+	return state
+end
+
+local LEVELS = {
+	Info = Color3.fromRGB(255, 255, 255),
+	Warn = Color3.fromRGB(240, 190, 60),
+	Error = Color3.fromRGB(240, 90, 90),
+	Success = Color3.fromRGB(80, 220, 120),
+	Debug = Color3.fromRGB(128, 160, 220)
+}
+
+function Container:Console(height, opts)
+	opts = opts or {}
+	local row = self:_row(height or 120, true)
+	local back = frame(row, tok(0, 0, 0, 0.5), {Size = UDim2.fromScale(1, 1)})
+	stroke(back, T.Border)
+	local scroll = new("ScrollingFrame", {
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollBarThickness = 5,
+		ScrollBarImageColor3 = T.Scroll
+	}, back)
+	pad(scroll, 4, 4, 2, 2)
+	list(scroll, 0).VerticalAlignment = Enum.VerticalAlignment.Top
+	local obj = {Frame = row, Count = 0, Max = opts.MaxLines or 200, AutoScroll = opts.AutoScroll ~= false}
+	local order = 0
+	function obj:Log(text, level)
+		order = order + 1
+		obj.Count = obj.Count + 1
+		local prefix = opts.Timestamp == false and "" or ("[" .. os.date("%H:%M:%S") .. "] ")
+		label(scroll, prefix .. tostring(text), {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			TextWrapped = true,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			TextColor3 = LEVELS[level or "Info"] or LEVELS.Info,
+			LayoutOrder = order
+		})
+		if obj.Count > obj.Max then
+			for _, child in scroll:GetChildren() do
+				if child:IsA("TextLabel") then
+					child:Destroy()
+					obj.Count = obj.Count - 1
+					break
+				end
+			end
+		end
+		if obj.AutoScroll then
+			task.defer(function()
+				scroll.CanvasPosition = Vector2.new(0, 1e6)
+			end)
+		end
+	end
+	function obj:Info(t)
+		obj:Log(t, "Info")
+	end
+	function obj:Warn(t)
+		obj:Log(t, "Warn")
+	end
+	function obj:Error(t)
+		obj:Log(t, "Error")
+	end
+	function obj:Success(t)
+		obj:Log(t, "Success")
+	end
+	function obj:Clear()
+		for _, child in scroll:GetChildren() do
+			if child:IsA("TextLabel") then
+				child:Destroy()
+			end
+		end
+		obj.Count = 0
+	end
+	return obj
+end
+
+function Container:Confirm(title, message, onYes, onNo, opts)
+	return self.Win.Lib:Confirm(title, message, onYes, onNo, opts)
+end
+
+function Container:Notify(o)
+	return self.Win.Lib:Notify(o)
+end
+
 function Container:Row()
 	local sub = self:_sub(true)
 	return sub
@@ -2185,6 +2569,173 @@ function Library:CreateWindow(o)
 		win:SetCollapsed(true)
 	end
 	return win
+end
+
+function Library:Dialog(o)
+	local gui = self.Gui
+	local vp = gui.AbsoluteSize
+	if vp.X <= 0 then
+		vp = Vector2.new(800, 600)
+	end
+	local width = math.min(o.Width or 280, vp.X - 24)
+	local blocker = button(gui, tok(0, 0, 0, 0.5), {Size = UDim2.fromScale(1, 1), ZIndex = 1000})
+	local dlg = frame(blocker, T.WindowBg, {
+		Size = UDim2.new(0, width, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		ZIndex = 1001
+	})
+	stroke(dlg, T.Border)
+	local layout = list(dlg, 0)
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	local head = frame(dlg, T.TitleActive, {Size = UDim2.new(1, 0, 0, FH), LayoutOrder = 1})
+	label(head, o.Title or "提示", {Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(6, 0)})
+	local bodyF = new("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 2
+	}, dlg)
+	pad(bodyF, PADX, PADX, PADX, PADX)
+	local inner = list(bodyF, PADX)
+	inner.VerticalAlignment = Enum.VerticalAlignment.Top
+	label(bodyF, o.Message or "", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		LayoutOrder = 1
+	})
+	local buttons = new("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, FH),
+		LayoutOrder = 2
+	}, bodyF)
+	local bl = list(buttons, PADX, true)
+	bl.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	local handle = {}
+	function handle:Close()
+		if blocker.Parent then
+			blocker:Destroy()
+		end
+	end
+	for i, spec in o.Buttons or {{Text = "确定"}} do
+		local n, h, p = T.Button, T.ButtonHover, T.ButtonActive
+		if spec.Color then
+			n, h, p = colorTokens(spec.Color)
+		end
+		local b = button(buttons, n, {
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Text = spec.Text,
+			LayoutOrder = i
+		})
+		pad(b, 10, 10, 0, 0)
+		bind(b, n, h, p)
+		b.MouseButton1Click:Connect(function()
+			handle:Close()
+			if spec.Callback then
+				task.spawn(spec.Callback)
+			end
+		end)
+	end
+	return handle
+end
+
+function Library:Confirm(title, message, onYes, onNo, opts)
+	opts = opts or {}
+	return self:Dialog({
+		Title = title,
+		Message = message,
+		Width = opts.Width,
+		Buttons = {
+			{Text = opts.Yes or "确定", Callback = onYes, Color = opts.YesColor},
+			{Text = opts.No or "取消", Callback = onNo}
+		}
+	})
+end
+
+local TOAST_COLORS = {
+	Info = Color3.fromRGB(66, 150, 250),
+	Success = Color3.fromRGB(80, 220, 120),
+	Warn = Color3.fromRGB(240, 190, 60),
+	Error = Color3.fromRGB(240, 90, 90)
+}
+
+function Library:Notify(o)
+	if type(o) == "string" then
+		o = {Content = o}
+	end
+	local gui = self.Gui
+	if not self.ToastHost or not self.ToastHost.Parent then
+		local host = new("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 230, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -8, 0, 8),
+			ZIndex = 900
+		}, gui)
+		local l = list(host, 4)
+		l.VerticalAlignment = Enum.VerticalAlignment.Top
+		l.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		self.ToastHost = host
+	end
+	local duration = o.Duration or 3
+	local color = TOAST_COLORS[o.Type or "Info"] or TOAST_COLORS.Info
+	self.ToastN = (self.ToastN or 0) + 1
+	local toast = button(self.ToastHost, T.WindowBg, {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = self.ToastN,
+		ZIndex = 901
+	})
+	stroke(toast, T.Border)
+	frame(toast, {color, 0}, {Size = UDim2.new(0, 3, 1, 0), ZIndex = 902})
+	local content = new("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		ZIndex = 902
+	}, toast)
+	pad(content, 10, 6, 4, 8)
+	list(content, 2).VerticalAlignment = Enum.VerticalAlignment.Top
+	if o.Title then
+		label(content, o.Title, {
+			Size = UDim2.new(1, 0, 0, FH - 4),
+			TextColor3 = color,
+			LayoutOrder = 1,
+			ZIndex = 903
+		})
+	end
+	if o.Content then
+		label(content, o.Content, {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			TextWrapped = true,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			LayoutOrder = 2,
+			ZIndex = 903
+		})
+	end
+	local bar = frame(toast, {color, 0.3}, {
+		Size = UDim2.new(1, 0, 0, 2),
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		ZIndex = 903
+	})
+	pcall(function()
+		TweenService:Create(bar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 2)}):Play()
+	end)
+	local function close()
+		if toast.Parent then
+			toast:Destroy()
+		end
+	end
+	toast.MouseButton1Click:Connect(close)
+	task.delay(duration, close)
+	return {Close = close}
 end
 
 function Library:SetVisible(v)
